@@ -224,10 +224,20 @@
     document.getElementById('explore-button').addEventListener('click', async () => {
         document.getElementById('welcome-popup').style.display = 'none';
         document.getElementById('menu').style.display = 'block';
-        welcome.play();
-
-        await fetchDrinks();
+            // Play intro sound muted
+            welcome.play();
+                await fetchDrinks();
         renderDrinkCards();
+            sound.muted = true; // Mute audio
+            sound.play().catch(error => {
+                console.error('Error playing intro sound:', error);
+            });
+
+            // Unmute audio once it has ended
+            sound.addEventListener('ended', () => {
+                sound.muted = false; // Unmute audio
+            });
+        });
     });
 
     async function fetchDrinks() {
