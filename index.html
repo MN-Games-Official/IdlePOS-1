@@ -42,7 +42,7 @@
     <script>
         // Initialize Supabase
         const supabase = window.supabase.createClient('https://utgmmvofnginuwvzajig.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Z21tdm9mbmdpbnV3dnphamlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjE5NTczMzksImV4cCI6MjAzNzUzMzMzOX0.YWH5Ceiz0OI_h8M6wG1M2UsDXM_43i5UdopmYLGO7aE');
-          const progressSound = document.getElementById('progress-sound');
+     const progressSound = document.getElementById('progress-sound');
         const completedSound = document.getElementById('completed-sound');
 
         document.getElementById('order-button').addEventListener('click', () => {
@@ -85,7 +85,20 @@
                     .single();
 
                 if (error) {
-                    console.error(error);
+                    if (error.code === 'PGRST116') {
+                        // Treat PGRST116 error as a completed order
+                        if (!localStorage.getItem('completeNotify')) {
+                            localStorage.setItem('completeNotify', 'true');
+                            completedSound.play(); // Play sound for completed
+                            alert('Your order is ready for pickup');
+                            localStorage.removeItem('orderId');
+                            localStorage.removeItem('pendingNotify');
+                            localStorage.removeItem('inprogressNotify');
+                            localStorage.removeItem('completeNotify');
+                        }
+                    } else {
+                        console.error(error);
+                    }
                     return;
                 }
 
