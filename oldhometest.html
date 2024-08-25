@@ -3,28 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/png" href="/Design.png"/>
     <title>User Order System</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #f7efff;
+            background-color: #f4f4f9;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100vh;
         }
-        #menu, #order-form, #drink-details {
+        #menu, #order-form {
             background-color: #fff;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             padding: 20px;
             width: 300px;
             text-align: center;
-            display: none;
         }
         button {
             background-color: #007BFF;
@@ -117,75 +115,30 @@
         #welcome-popup button:hover {
             background-color: #218838;
         }
-        /* Drink cards styling */
-        #drink-cards {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 10px;
-        }
-        .drink-card {
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            padding: 15px;
-            width: 200px;
-            text-align: center;
-        }
-        .drink-card h3 {
-            margin: 0;
-            font-size: 18px;
-            margin-bottom: 10px;
-        }
-        .drink-card p {
-            font-size: 14px;
-            color: #666;
-        }
-        .drink-card button {
-            background-color: #007BFF;
-            margin-top: 10px;
-            width: 100%;
-        }
-        .drink-card button:hover {
-            background-color: #0056b3;
-        }
-        #drink-details {
-            display: none;
-        }
-        #drink-details h2 {
-            margin-bottom: 15px;
-        }
-        #drink-details p {
-            margin-bottom: 15px;
-        }
     </style>
 </head>
 <body>
     <!-- Welcome Popup -->
     <div id="welcome-popup">
         <h1>Welcome!</h1>
-        <p>We're glad to have you here at Steve and Stacy's Year End Party. Click the button below to explore our drink selection.</p>
+        <p>We're glad to have you here. Click the button below to explore our drink selection.</p>
         <button id="explore-button">Explore Drink Selection</button>
     </div>
 
-    <div id="menu">
-        <h1>Drink Menu</h1>
-        <div id="drink-cards"></div>
+    <div id="menu" style="display: none;">
+        <h1>Drink Order System</h1>
+        <button id="order-button">Get a Drink</button>
     </div>
 
-    <div id="drink-details">
-        <h2 id="drink-name"></h2>
-        <p id="drink-description"></p>
-        <p id="drink-ingredients"></p>
-        <button id="order-drink-button">Order this Drink</button>
-        <button id="back-to-menu-button">Back to Menu</button>
-    </div>
-
-    <div id="order-form">
+    <div id="order-form" style="display: none;">
         <h2>Order Form</h2>
         <form id="drink-form">
             <label for="drink">Select Drink:</label>
-            <select id="drink" name="drink"></select>
+            <select id="drink" name="drink">
+                <option value="Coke">Coke</option>
+                <option value="Pepsi">Pepsi</option>
+                <option value="Water">Water</option>
+            </select>
             <button type="submit">Place Order</button>
         </form>
         <p id="order-message"></p>
@@ -212,147 +165,81 @@
 
     <audio id="sound" src="225661-ComputerSFX-alerts-071.wav" preload="auto"></audio>
     <audio id="welcome" src="advertising-logo-199582.mp3" preload="auto"></audio>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-<script>
-    // Initialize Supabase
-    const supabase = window.supabase.createClient('https://utgmmvofnginuwvzajig.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Z21tdm9mbmdpbnV3dnphamlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjE5NTczMzksImV4cCI6MjAzNzUzMzMzOX0.YWH5Ceiz0OI_h8M6wG1M2UsDXM_43i5UdopmYLGO7aE');
-    const sound = document.getElementById('sound');
-    const welcome = document.getElementById('welcome');
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script>
+        // Initialize Supabase
+        const supabase = window.supabase.createClient('https://utgmmvofnginuwvzajig.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Z21tdm9mbmdpbnV3dnphamlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjE5NTczMzksImV4cCI6MjAzNzUzMzMzOX0.YWH5Ceiz0OI_h8M6wG1M2UsDXM_43i5UdopmYLGO7aE');
+        const sound = document.getElementById('sound');
+        const welcome = document.getElementById('welcome')
 
-    let drinksData = [];
+        // User interaction to unlock audio on iOS
+        document.getElementById('explore-button').addEventListener('click', () => {
+            // Hide welcome popup and show menu
+            document.getElementById('welcome-popup').style.display = 'none';
+            document.getElementById('menu').style.display = 'block';
 
-    document.getElementById('explore-button').addEventListener('click', async () => {
-        document.getElementById('welcome-popup').style.display = 'none';
-        document.getElementById('menu').style.display = 'block';
             // Play intro sound muted
             welcome.play();
-                await fetchDrinks();
-            renderDrinkCards();
             sound.muted = true; // Mute audio
             sound.play().catch(error => {
                 console.error('Error playing intro sound:', error);
             });
 
-            sound.onended = function(){
+            // Unmute audio once it has ended
+            sound.addEventListener('ended', () => {
                 sound.muted = false; // Unmute audio
             });
         });
 
-    async function fetchDrinks() {
-        const { data, error } = await supabase
-            .from('drinks')
-            .select('*');
-
-        if (error) {
-            console.error('Error fetching drinks:', error);
-            return;
-        }
-
-        drinksData = data;
-    }
-
-    function renderDrinkCards() {
-        const drinkCardsContainer = document.getElementById('drink-cards');
-        drinkCardsContainer.innerHTML = '';
-
-        drinksData.forEach(drink => {
-            const card = document.createElement('div');
-            card.className = 'drink-card';
-            card.innerHTML = `
-                <h3>${drink.name}</h3>
-                <p>${drink.description.substring(0, 50)}...</p>
-                <button onclick="viewDrink('${drink.name}')">View this Drink</button>
-            `;
-            drinkCardsContainer.appendChild(card);
-        });
-    }
-
-    function viewDrink(drinkName) {
-        const drink = drinksData.find(d => d.name === drinkName);
-        if (drink) {
-            document.getElementById('drink-name').innerText = drink.name;
-            document.getElementById('drink-description').innerText = `Description: ${drink.description}`;
-            document.getElementById('drink-ingredients').innerText = `Ingredients: ${drink.ingredients}`;
-            document.getElementById('drink-details').style.display = 'block';
+        document.getElementById('order-button').addEventListener('click', () => {
             document.getElementById('menu').style.display = 'none';
-        }
-    }
-
-    document.getElementById('back-to-menu-button').addEventListener('click', () => {
-        document.getElementById('drink-details').style.display = 'none';
-        document.getElementById('menu').style.display = 'block';
-    });
-
-    document.getElementById('order-drink-button').addEventListener('click', () => {
-        const selectedDrink = document.getElementById('drink-name').innerText;
-        populateDrinkDropdown(selectedDrink);
-        document.getElementById('drink-details').style.display = 'none';
-        document.getElementById('order-form').style.display = 'block';
-    });
-
-    function populateDrinkDropdown(selectedDrink) {
-        const drinkSelect = document.getElementById('drink');
-        drinkSelect.innerHTML = '';
-        drinksData.forEach(drink => {
-            const option = document.createElement('option');
-            option.value = drink.name;
-            option.text = drink.name;
-            if (drink.name === selectedDrink) {
-                option.selected = true;
-            }
-            drinkSelect.appendChild(option);
+            document.getElementById('order-form').style.display = 'block';
         });
-    }
 
-    document.getElementById('drink-form').addEventListener('submit', async (event) => {
-        event.preventDefault();
-        const drink = document.getElementById('drink').value;
-        const id = Math.floor(1000 + Math.random() * 9000); // Generate a 4-digit ID
+        document.getElementById('drink-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const drink = document.getElementById('drink').value;
+            const id = Math.floor(1000 + Math.random() * 9000); // Generate a 4-digit ID
 
-        const { data, error } = await supabase
-            .from('orders')
-            .insert([{ id, drink, status: 'pending' }]);
+            const { data, error } = await supabase
+                .from('orders')
+                .insert([{ id, drink, status: 'pending' }]);
 
-        if (error) {
-            console.error(error);
-            document.getElementById('order-message').innerText = 'Error placing order!';
-            return;
+            if (error) {
+                console.error(error);
+                document.getElementById('order-message').innerText = 'Error placing order!';
+                return;
+            }
+
+            localStorage.setItem('orderId', id);
+            localStorage.setItem('pendingNotify', 'true'); // Set pendingNotify to true
+            document.getElementById('order-id').innerText = id;
+            showPopup('success-popup');
+        });
+
+        document.getElementById('close-form-button').addEventListener('click', () => {
+            document.getElementById('order-form').style.display = 'none';
+            document.getElementById('menu').style.display = 'block';
+        });
+
+        function showPopup(popupId) {
+            const popup = document.getElementById(popupId);
+            if (popup) {
+                popup.classList.add('show');
+            }
         }
 
-        // Retrieve existing orders from localStorage
-        let orderIds = JSON.parse(localStorage.getItem('orderIds')) || [];
-        // Add the new order ID to the list
-        orderIds.push(id);
-        localStorage.setItem('orderIds', JSON.stringify(orderIds));
-        localStorage.setItem('pendingNotify', 'true'); // Set pendingNotify to true
-        document.getElementById('order-id').innerText = id;
-        showPopup('success-popup');
-    });
-
-    document.getElementById('close-form-button').addEventListener('click', () => {
-        document.getElementById('order-form').style.display = 'none';
-        document.getElementById('menu').style.display = 'block';
-    });
-
-    function showPopup(popupId) {
-        const popup = document.getElementById(popupId);
-        if (popup) {
-            popup.classList.add('show');
+        function closePopup(popupId) {
+            const popup = document.getElementById(popupId);
+            if (popup) {
+                popup.classList.remove('show');
+            }
         }
-    }
 
-    function closePopup(popupId) {
-        const popup = document.getElementById(popupId);
-        if (popup) {
-            popup.classList.remove('show');
-        }
-    }
-
-    // Poll for order status
-    async function checkOrderStatus() {
-        const orderIds = JSON.parse(localStorage.getItem('orderIds')) || [];
-        if (orderIds.length > 0) {
-            for (const userOrderId of orderIds) {
+        // Poll for order status
+        async function checkOrderStatus() {
+            const userOrderId = localStorage.getItem('orderId');
+            if (userOrderId) {
                 const { data: order, error } = await supabase
                     .from('orders')
                     .select('*')
@@ -361,26 +248,26 @@
 
                 if (error) {
                     if (error.code === 'PGRST116') {
-                        document.title = "Your order is complete"
                         // Treat PGRST116 error as a completed order
+                        document.title = "Your order is complete"
                         if (!localStorage.getItem('completeNotify')) {
                             localStorage.setItem('completeNotify', 'true');
                             playSound(); // Play sound for completed
                             showPopup('completed-popup');
-                            // Reset notification flags
-                            resetNotificationFlags();
-                            // Remove the completed order ID
-                            removeOrderFromLocalStorage(userOrderId);
+                            localStorage.removeItem('orderId');
+                            localStorage.removeItem('pendingNotify');
+                            localStorage.removeItem('inprogressNotify');
+                            localStorage.removeItem('completeNotify');
                         }
                     } else {
                         console.error(error);
                     }
-                    continue;
+                    return;
                 }
 
                 if (order) {
                     if (order.status === 'inprogress') {
-                        document.title = "Order in progress"
+                       document.title = "Order in progress" 
                         if (!localStorage.getItem('inprogressNotify')) {
                             localStorage.setItem('inprogressNotify', 'true');
                             playSound(); // Play sound for in progress
@@ -391,39 +278,24 @@
                             localStorage.setItem('completeNotify', 'true');
                             playSound(); // Play sound for completed
                             showPopup('completed-popup');
-                            // Reset notification flags
-                            resetNotificationFlags();
-                            removeOrderFromLocalStorage(userOrderId);
+                            localStorage.removeItem('orderId');
+                            localStorage.removeItem('pendingNotify');
+                            localStorage.removeItem('inprogressNotify');
+                            localStorage.removeItem('completeNotify');
                         }
                     }
                 }
             }
         }
-    }
 
-    function removeOrderFromLocalStorage(orderId) {
-        let orderIds = JSON.parse(localStorage.getItem('orderIds')) || [];
-        orderIds = orderIds.filter(id => id !== orderId);
-        if (orderIds.length > 0) {
-            localStorage.setItem('orderIds', JSON.stringify(orderIds));
-        } else {
-            localStorage.removeItem('orderIds');
+        function playSound() {
+            // Ensure the sound is played by a user interaction
+            sound.play().catch(error => {
+                console.error('Failed to play sound:', error);
+            });
         }
-    }
 
-    function resetNotificationFlags() {
-        localStorage.removeItem('inprogressNotify');
-        localStorage.removeItem('completeNotify');
-    }
-
-    function playSound() {
-        // Ensure the sound is played by a user interaction
-        sound.play().catch(error => {
-            console.error('Failed to play sound:', error);
-        });
-    }
-
-    setInterval(checkOrderStatus, 5000); // Check every 5 seconds
-</script>
+        setInterval(checkOrderStatus, 5000); // Check every 5 seconds
+    </script>
 </body>
 </html>
