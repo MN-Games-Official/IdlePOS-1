@@ -3,17 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Drink Order System</title>
+    <title>User Order System</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             padding: 20px;
         }
-
-        #menu, #order-form, #bartender {
+        #menu, #order-form {
             margin: 20px;
         }
-
         button {
             margin-top: 10px;
         }
@@ -39,16 +37,10 @@
         <p id="order-message"></p>
     </div>
 
-    <div id="bartender" style="display: none;">
-        <h2>Bartender Orders</h2>
-        <ul id="order-list"></ul>
-    </div>
-
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script>
         // Initialize Supabase
         const supabase = window.supabase.createClient('https://utgmmvofnginuwvzajig.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Z21tdm9mbmdpbnV3dnphamlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjE5NTczMzksImV4cCI6MjAzNzUzMzMzOX0.YWH5Ceiz0OI_h8M6wG1M2UsDXM_43i5UdopmYLGO7aE');
-
         document.getElementById('order-button').addEventListener('click', () => {
             document.getElementById('menu').style.display = 'none';
             document.getElementById('order-form').style.display = 'block';
@@ -77,63 +69,31 @@
             }, 3000);
         });
 
-        async function loadOrders() {
-            const { data: orders, error } = await supabase
-                .from('orders')
-                .select('*')
-                .eq('status', 'pending');
-
-            if (error) {
-                console.error(error);
-                return;
-            }
-
-            const orderList = document.getElementById('order-list');
-            orderList.innerHTML = '';
-
-            orders.forEach(order => {
-                const li = document.createElement('li');
-                li.innerText = `Order ID: ${order.id} - Drink: ${order.drink}`;
-                
-                const acceptButton = document.createElement('button');
-                acceptButton.innerText = 'Accept';
-                acceptButton.addEventListener('click', () => acceptOrder(order.id));
-                
-                li.appendChild(acceptButton);
-                orderList.appendChild(li);
-            });
-
-            document.getElementById('menu').style.display = 'none';
-            document.getElementById('order-form').style.display = 'none';
-            document.getElementById('bartender').style.display = 'block';
-        }
-
-        async function acceptOrder(id) {
-            const { data, error } = await supabase
-                .from('orders')
-                .update({ status: 'inprogress' })
-                .match({ id });
-
-            if (error) {
-                console.error(error);
-                return;
-            }
-
-            alert('Order is in progress');
-
+        // Poll for order status
+        async function checkOrderStatus() {
             const userOrderId = localStorage.getItem('orderId');
-            if (userOrderId == id) {
-                alert('Your order is in progress');
+            if (userOrderId) {
+                const { data: order, error } = await supabase
+                    .from('orders')
+                    .select('*')
+                    .eq('id', userOrderId)
+                    .single();
+
+                if (error) {
+                    console.error(error);
+                    return;
+                }
+
+                if (order && order.status === 'inprogress') {
+                    alert('Your order is now in progress');
+                } else if (order && order.status === 'completed') {
+                    alert('Your order is ready for pickup');
+                    localStorage.removeItem('orderId');
+                }
             }
-
-            // Simulate order details and ingredients
-            console.log(`Order ID ${id} is now in progress`);
-
-            // Notify bartender order is completed
-            document.getElementById('order-list').innerHTML = '';
         }
 
-        document.addEventListener('DOMContentLoaded', loadOrders);
+        setInterval(checkOrderStatus, 5000); // Check every 5 seconds
     </script>
 </body>
 </html>
