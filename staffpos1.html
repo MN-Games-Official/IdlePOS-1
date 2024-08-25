@@ -31,8 +31,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script>
         // Initialize Supabase
-        const { createClient } = supabase;
-        const supabase = createClient('YOUR_SUPABASE_URL', 'YOUR_SUPABASE_KEY');
+   const supabase = window.supabase.createClient('https://utgmmvofnginuwvzajig.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Z21tdm9mbmdpbnV3dnphamlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjE5NTczMzksImV4cCI6MjAzNzUzMzMzOX0.YWH5Ceiz0OI_h8M6wG1M2UsDXM_43i5UdopmYLGO7aE');
 
         async function loadOrders() {
             const { data: orders, error } = await supabase
@@ -56,7 +55,12 @@
                 acceptButton.innerText = 'Accept';
                 acceptButton.addEventListener('click', () => acceptOrder(order.id));
                 
+                const completeButton = document.createElement('button');
+                completeButton.innerText = 'Complete';
+                completeButton.addEventListener('click', () => completeOrder(order.id));
+
                 li.appendChild(acceptButton);
+                li.appendChild(completeButton);
                 orderItems.appendChild(li);
             });
         }
@@ -95,8 +99,14 @@
 
             alert('Order is in progress');
 
-            // Notify user
-            fetch(`https://your-server-url/notify?orderId=${id}`, { method: 'POST' });
+            // Notify user via Vercel serverless function
+            await fetch('/api/notify-user', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ orderId: id }),
+            });
 
             // Reload orders and stats
             loadOrders();
@@ -114,6 +124,15 @@
             }
 
             alert('Order completed. Please notify the user to pick up.');
+
+            // Notify user via Vercel serverless function
+            await fetch('/api/complete-order', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ orderId: id }),
+            });
 
             // Reload orders and stats
             loadOrders();
