@@ -45,35 +45,24 @@
         .popup {
             display: none;
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.7);
-            color: #fff;
+            top: 20px;
+            right: 20px;
+            background-color: #fff;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             padding: 20px;
+            width: 250px;
             z-index: 1000;
-            overflow: auto;
-            text-align: center;
         }
         .popup.show {
             display: block;
         }
         .popup .title {
-            font-size: 24px;
             font-weight: bold;
             margin-bottom: 10px;
         }
         .popup .message {
-            margin-bottom: 20px;
-            font-size: 18px;
-        }
-        .popup .checkmark {
-            font-size: 100px;
-            color: #28a745;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
         .popup button {
             background-color: #dc3545;
@@ -86,6 +75,40 @@
         }
         .popup button:hover {
             background-color: #c82333;
+        }
+        /* Fullscreen success popup */
+        .fullscreen-popup {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            text-align: center;
+            padding-top: 100px;
+            z-index: 1000;
+        }
+        .fullscreen-popup .checkmark {
+            font-size: 50px;
+            margin-bottom: 20px;
+        }
+        .fullscreen-popup .message {
+            font-size: 20px;
+            margin-bottom: 30px;
+        }
+        .fullscreen-popup button {
+            background-color: #28a745;
+            border: none;
+            border-radius: 5px;
+            color: #fff;
+            cursor: pointer;
+            padding: 10px 20px;
+            font-size: 16px;
+        }
+        .fullscreen-popup button:hover {
+            background-color: #218838;
         }
     </style>
 </head>
@@ -107,16 +130,9 @@
             <button type="submit">Place Order</button>
         </form>
         <p id="order-message"></p>
-        <button id="close-form-button">Close</button>
     </div>
 
     <!-- Popup notifications -->
-    <div id="success-popup" class="popup">
-        <div class="checkmark">&#10003;</div>
-        <div class="title">Order Placed Successfully</div>
-        <div class="message">Your Order ID is <span id="order-id"></span>. You will get notifications when your drink is in progress and when it is ready!</div>
-        <button onclick="closePopup('success-popup')">Close</button>
-    </div>
     <div id="inprogress-popup" class="popup">
         <div class="title">Order Update</div>
         <div class="message">Your order is now in progress.</div>
@@ -127,7 +143,15 @@
         <div class="message">Your order is ready for pickup.</div>
         <button onclick="closePopup('completed-popup')">Close</button>
     </div>
-    
+
+    <!-- Fullscreen success popup -->
+    <div id="success-popup" class="fullscreen-popup">
+        <div class="checkmark">✔</div>
+        <div class="message">Order placed successfully! Your Order ID is <span id="order-id"></span>.</div>
+        <div class="message">You will get notifications when your drink is in progress and when it is ready!</div>
+        <button onclick="closePopup('success-popup')">Close</button>
+    </div>
+
     <audio id="progress-sound" src="225661-ComputerSFX-alerts-071.wav" preload="auto"></audio>
     <audio id="completed-sound" src="225661-ComputerSFX-alerts-071.wav" preload="auto"></audio>
 
@@ -137,27 +161,22 @@
         const supabase = window.supabase.createClient('https://utgmmvofnginuwvzajig.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Z21tdm9mbmdpbnV3dnphamlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjE5NTczMzksImV4cCI6MjAzNzUzMzMzOX0.YWH5Ceiz0OI_h8M6wG1M2UsDXM_43i5UdopmYLGO7aE');
         const progressSound = document.getElementById('progress-sound');
         const completedSound = document.getElementById('completed-sound');
+        let audioUnlocked = false;
 
-        // User interaction to unlock audio on iOS
         document.getElementById('order-button').addEventListener('click', () => {
             document.getElementById('menu').style.display = 'none';
             document.getElementById('order-form').style.display = 'block';
+
+            // Unlock audio playback on Safari after first user interaction
+            if (!audioUnlocked) {
+                progressSound.play().catch(() => {});
+                completedSound.play().catch(() => {});
+                audioUnlocked = true;
+            }
         });
 
         document.getElementById('drink-form').addEventListener('submit', async (event) => {
             event.preventDefault();
-    const progressSound = document.getElementById('progress-sound');
-    if (progressSound) {
-        progressSound.muted = true; // Mute the audio
-        progressSound.play().catch(error => {
-            console.error('Error playing sound:', error);
-        });
-
-        // Unmute the audio after it finishes playing
-        progressSound.addEventListener('ended', () => {
-            progressSound.muted = false; // Unmute the audio
-        });
-    }
             const drink = document.getElementById('drink').value;
             const id = Math.floor(1000 + Math.random() * 9000); // Generate a 4-digit ID
 
@@ -173,13 +192,10 @@
 
             localStorage.setItem('orderId', id);
             localStorage.setItem('pendingNotify', 'true'); // Set pendingNotify to true
+
+            // Show success popup
             document.getElementById('order-id').innerText = id;
             showPopup('success-popup');
-        });
-
-        document.getElementById('close-form-button').addEventListener('click', () => {
-            document.getElementById('order-form').style.display = 'none';
-            document.getElementById('menu').style.display = 'block';
         });
 
         function showPopup(popupId) {
@@ -211,7 +227,7 @@
                         // Treat PGRST116 error as a completed order
                         if (!localStorage.getItem('completeNotify')) {
                             localStorage.setItem('completeNotify', 'true');
-                            playCompletedSound(); // Play sound for completed
+                            if (audioUnlocked) completedSound.play(); // Play sound for completed
                             showPopup('completed-popup');
                             localStorage.removeItem('orderId');
                             localStorage.removeItem('pendingNotify');
@@ -228,13 +244,13 @@
                     if (order.status === 'inprogress') {
                         if (!localStorage.getItem('inprogressNotify')) {
                             localStorage.setItem('inprogressNotify', 'true');
-                            playProgressSound(); // Play sound for in progress
+                            if (audioUnlocked) progressSound.play(); // Play sound for in progress
                             showPopup('inprogress-popup');
                         }
                     } else if (order.status === 'completed') {
                         if (!localStorage.getItem('completeNotify')) {
                             localStorage.setItem('completeNotify', 'true');
-                            playCompletedSound(); // Play sound for completed
+                            if (audioUnlocked) completedSound.play(); // Play sound for completed
                             showPopup('completed-popup');
                             localStorage.removeItem('orderId');
                             localStorage.removeItem('pendingNotify');
@@ -244,20 +260,6 @@
                     }
                 }
             }
-        }
-
-        function playProgressSound() {
-            // Ensure the sound is played by a user interaction
-            progressSound.play().catch(error => {
-                console.error('Failed to play progress sound:', error);
-            });
-        }
-
-        function playCompletedSound() {
-            // Ensure the sound is played by a user interaction
-            completedSound.play().catch(error => {
-                console.error('Failed to play completed sound:', error);
-            });
         }
 
         setInterval(checkOrderStatus, 5000); // Check every 5 seconds
