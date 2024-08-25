@@ -8,11 +8,40 @@
         body {
             font-family: Arial, sans-serif;
             padding: 20px;
+            background-color: #f4f4f4;
         }
-        #order-list, #stats, #order-details {
+        #order-list, #order-details {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             margin: 20px;
+            padding: 20px;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        #order-items li, #ingredients-list li {
+            margin-bottom: 10px;
         }
         button {
+            background-color: #007BFF;
+            border: none;
+            border-radius: 5px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 10px 20px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #order-details {
+            display: none;
+        }
+        .order-info {
+            font-weight: bold;
+        }
+        .ingredients {
             margin-top: 10px;
         }
     </style>
@@ -23,15 +52,10 @@
         <ul id="order-items"></ul>
     </div>
 
-    <div id="stats">
-        <h2>Drink Statistics</h2>
-        <ul id="drink-stats"></ul>
-    </div>
-
-    <div id="order-details" style="display: none;">
+    <div id="order-details">
         <h2>Order Details</h2>
-        <p id="order-info"></p>
-        <ul id="ingredients-list"></ul>
+        <p id="order-info" class="order-info"></p>
+        <div id="ingredients-list" class="ingredients"></div>
         <button id="complete-button">Complete Order</button>
     </div>
 
@@ -41,7 +65,7 @@
     <script>
         // Initialize Supabase
    const supabase = window.supabase.createClient('https://utgmmvofnginuwvzajig.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Z21tdm9mbmdpbnV3dnphamlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjE5NTczMzksImV4cCI6MjAzNzUzMzMzOX0.YWH5Ceiz0OI_h8M6wG1M2UsDXM_43i5UdopmYLGO7aE');
-       const alertSound = document.getElementById('alert-sound');
+  const alertSound = document.getElementById('alert-sound');
 
         async function loadOrders() {
             const { data: orders, error } = await supabase
@@ -70,35 +94,6 @@
             });
         }
 
-        async function loadDrinkStats() {
-            const { data: orders, error } = await supabase
-                .from('orders')
-                .select('*');
-
-            if (error) {
-                console.error('Error loading drink stats:', error);
-                return;
-            }
-
-            const drinkStats = document.getElementById('drink-stats');
-            const drinkCount = {};
-
-            // Aggregate statistics
-            orders.forEach(order => {
-                if (!drinkCount[order.drink]) {
-                    drinkCount[order.drink] = 0;
-                }
-                drinkCount[order.drink]++;
-            });
-
-            drinkStats.innerHTML = '';
-            for (const [drink, count] of Object.entries(drinkCount)) {
-                const li = document.createElement('li');
-                li.innerText = `${drink}: ${count}`;
-                drinkStats.appendChild(li);
-            }
-        }
-
         async function showOrderDetails(order) {
             // Show the order details
             document.getElementById('order-details').style.display = 'block';
@@ -107,11 +102,18 @@
             // Display ingredients list
             const ingredientsList = document.getElementById('ingredients-list');
             ingredientsList.innerHTML = ''; // Clear previous list
-            if (order.ingredients) {
-                const ingredients = order.ingredients.split(','); // Assuming ingredients are comma-separated
-                ingredients.forEach(ingredient => {
+
+            // Define ingredients based on drink type
+            const ingredientsMap = {
+                Coke: ['Carbonated Water', 'High Fructose Corn Syrup', 'Caramel Color', 'Caffeine'],
+                Pepsi: ['Carbonated Water', 'High Fructose Corn Syrup', 'Caramel Color', 'Caffeine', 'Citric Acid'],
+                Water: ['Purified Water']
+            };
+
+            if (order.drink && ingredientsMap[order.drink]) {
+                ingredientsMap[order.drink].forEach(ingredient => {
                     const li = document.createElement('li');
-                    li.innerText = ingredient.trim();
+                    li.innerText = ingredient;
                     ingredientsList.appendChild(li);
                 });
             }
@@ -133,7 +135,9 @@
             }
 
             // Play sound for alert
-            alertSound.play();
+            if (!document.body.classList.contains('bartender')) {
+                alertSound.play();
+            }
             alert('Order is in progress');
 
             // Notify user via serverless function
@@ -159,9 +163,8 @@
 
             showOrderDetails(orderDetails);
 
-            // Reload orders and stats
+            // Reload orders
             loadOrders();
-            loadDrinkStats();
         }
 
         async function completeOrder(id) {
@@ -177,7 +180,9 @@
             }
 
             // Play sound for alert
-            alertSound.play();
+            if (!document.body.classList.contains('bartender')) {
+                alertSound.play();
+            }
             alert('Order completed. Please notify the user to pick up.');
 
             // Notify user via serverless function
@@ -192,14 +197,12 @@
             // Hide order details
             document.getElementById('order-details').style.display = 'none';
 
-            // Reload orders and stats
+            // Reload orders
             loadOrders();
-            loadDrinkStats();
         }
 
         document.addEventListener('DOMContentLoaded', () => {
             loadOrders();
-            loadDrinkStats();
         });
     </script>
 </body>
