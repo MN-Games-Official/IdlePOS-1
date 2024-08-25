@@ -237,9 +237,9 @@
 
             sound.onended = function(){
                 sound.muted = false; // Unmute audio
+                console.log(`Sound muted: ${sound.muted}`)
             };
         });
-console.log(`Sound muted: ${sound.muted}`)
     async function fetchDrinks() {
         const { data, error } = await supabase
             .from('drinks')
