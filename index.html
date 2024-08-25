@@ -239,7 +239,7 @@
                 sound.muted = false; // Unmute audio
             };
         });
-
+console.log(`Sound muted: ${sound.muted}`)
     async function fetchDrinks() {
         const { data, error } = await supabase
             .from('drinks')
@@ -320,7 +320,11 @@
             document.getElementById('order-message').innerText = 'Error placing order!';
             return;
         }
-
+        /*sound.volume = 0.2
+        sound.play
+         sound.onended = function(){
+                sound.muted = 1.0; // Unmute audio
+            };*/
         // Retrieve existing orders from localStorage
         let orderIds = JSON.parse(localStorage.getItem('orderIds')) || [];
         // Add the new order ID to the list
