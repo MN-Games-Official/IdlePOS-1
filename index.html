@@ -260,10 +260,10 @@
         drinksData.forEach(drink => {
             const card = document.createElement('div');
             card.className = 'drink-card';
-            card.innerHTML = 
+            card.innerHTML = `
                 <h3>${drink.name}</h3>
                 <p>${drink.description.substring(0, 50)}...</p>
-                <button onclick="viewDrink('${drink.name}')">View this Drink</button>
+                <button onclick="viewDrink('${drink.name}')">View this Drink</button>`
             ;
             drinkCardsContainer.appendChild(card);
         });
@@ -273,8 +273,8 @@
         const drink = drinksData.find(d => d.name === drinkName);
         if (drink) {
             document.getElementById('drink-name').innerText = drink.name;
-            document.getElementById('drink-description').innerText = Description: ${drink.description};
-            document.getElementById('drink-ingredients').innerText = Ingredients: ${drink.ingredients};
+            document.getElementById('drink-description').innerText =  `Description: ${drink.description}`;
+            document.getElementById('drink-ingredients').innerText = `Ingredients: ${drink.ingredients}`;
             document.getElementById('drink-details').style.display = 'block';
             document.getElementById('menu').style.display = 'none';
         }
