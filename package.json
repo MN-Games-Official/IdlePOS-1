@@ -1,0 +1,19 @@
+{
+  "name": "order-system",
+  "version": "1.0.0",
+  "description": "Order system with Supabase and Vercel serverless functions",
+  "main": "index.js",
+  "scripts": {
+    "start": "vercel dev",
+    "build": "vercel build",
+    "deploy": "vercel deploy"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.0.0"
+  },
+  "devDependencies": {
+    "vercel": "^31.0.0"  // Use the latest version of the Vercel CLI
+  },
+  "author": "",
+  "license": "MIT"
+}
