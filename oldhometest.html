@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="/Design.png"/>
     <title>User Order System</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #f4f4f9;
+            background-color: #f7efff;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -88,6 +89,7 @@
         .popup button:hover {
             background-color: #c82333;
         }
+        /* New welcome popup styles */
         #welcome-popup {
             display: block; /* Display on page load */
             position: fixed;
@@ -115,6 +117,7 @@
         #welcome-popup button:hover {
             background-color: #218838;
         }
+        /* Drink cards styling */
         #drink-cards {
             display: flex;
             flex-wrap: wrap;
@@ -178,20 +181,16 @@
         <button id="back-to-menu-button">Back to Menu</button>
     </div>
 
-  <!-- Updated Order Form -->
-<div id="order-form">
-    <h2>Order Form</h2>
-    <form id="drink-form">
-        <label for="drink">Select Drink:</label>
-        <select id="drink" name="drink"></select>
-        <label for="user-name">Your Name:</label>
-        <input type="text" id="user-name" name="user-name" required />
-        <button type="submit">Place Order</button>
-    </form>
-    <p id="order-message"></p>
-    <button id="close-form-button">Close</button>
-</div>
-
+    <div id="order-form">
+        <h2>Order Form</h2>
+        <form id="drink-form">
+            <label for="drink">Select Drink:</label>
+            <select id="drink" name="drink"></select>
+            <button type="submit">Place Order</button>
+        </form>
+        <p id="order-message"></p>
+        <button id="close-form-button">Close</button>
+    </div>
 
     <!-- Popup notifications -->
     <div id="success-popup" class="popup">
@@ -299,15 +298,12 @@
 
     document.getElementById('drink-form').addEventListener('submit', async (event) => {
         event.preventDefault();
-
         const drink = document.getElementById('drink').value;
-        const userName = document.getElementById('user-name').value;
-        const userId = crypto.randomUUID(); // Generate a unique user identifier
-        const orderId = Math.floor(1000 + Math.random() * 9000); // Generate a 4-digit ID
+        const id = Math.floor(1000 + Math.random() * 9000); // Generate a 4-digit ID
 
         const { data, error } = await supabase
             .from('orders')
-            .insert([{ id: orderId, drink, status: 'pending', user_id: userId, user_name: userName }]);
+            .insert([{ id, drink, status: 'pending' }]);
 
         if (error) {
             console.error(error);
@@ -315,9 +311,13 @@
             return;
         }
 
-        localStorage.setItem('orderId', orderId);
+        // Retrieve existing orders from localStorage
+        let orderIds = JSON.parse(localStorage.getItem('orderIds')) || [];
+        // Add the new order ID to the list
+        orderIds.push(id);
+        localStorage.setItem('orderIds', JSON.stringify(orderIds));
         localStorage.setItem('pendingNotify', 'true'); // Set pendingNotify to true
-        document.getElementById('order-id').innerText = orderId;
+        document.getElementById('order-id').innerText = id;
         showPopup('success-popup');
     });
 
@@ -342,49 +342,68 @@
 
     // Poll for order status
     async function checkOrderStatus() {
-        const userOrderId = localStorage.getItem('orderId');
-        if (userOrderId) {
-            const { data: order, error } = await supabase
-                .from('orders')
-                .select('*')
-                .eq('id', userOrderId)
-                .single();
+        const orderIds = JSON.parse(localStorage.getItem('orderIds')) || [];
+        if (orderIds.length > 0) {
+            for (const userOrderId of orderIds) {
+                const { data: order, error } = await supabase
+                    .from('orders')
+                    .select('*')
+                    .eq('id', userOrderId)
+                    .single();
 
-            if (error) {
-                if (error.code === 'PGRST116' && !localStorage.getItem(`completeNotify_${userOrderId}`)) {
-                    // Handle the not found error as a completed order
-                    localStorage.setItem(`completeNotify_${userOrderId}`, 'true');
-                    playSound(); // Play sound for completed
-                    showPopup('completed-popup');
-                    localStorage.removeItem('orderId');
-                    localStorage.removeItem('pendingNotify');
-                    localStorage.removeItem('inprogressNotify');
-                    localStorage.removeItem(`completeNotify_${userOrderId}`);
-                } else {
-                    console.error(error);
-                }
-                return;
-            }
-
-            if (order) {
-                if (order.status === 'inprogress') {
-                    document.title = "Order in progress";
-                    if (!localStorage.getItem('inprogressNotify')) {
-                        localStorage.setItem('inprogressNotify', 'true');
-                        playSound(); // Play sound for in progress
-                        showPopup('inprogress-popup');
+                if (error) {
+                    if (error.code === 'PGRST116') {
+                        // Treat PGRST116 error as a completed order
+                        if (!localStorage.getItem('completeNotify')) {
+                            localStorage.setItem('completeNotify', 'true');
+                            playSound(); // Play sound for completed
+                            showPopup('completed-popup');
+                            // Reset notification flags
+                            resetNotificationFlags();
+                            // Remove the completed order ID
+                            removeOrderFromLocalStorage(userOrderId);
+                        }
+                    } else {
+                        console.error(error);
                     }
-                } else if (order.status === 'completed' && !localStorage.getItem(`completeNotify_${userOrderId}`)) {
-                    localStorage.setItem(`completeNotify_${userOrderId}`, 'true');
-                    playSound(); // Play sound for completed
-                    showPopup('completed-popup');
-                    localStorage.removeItem('orderId');
-                    localStorage.removeItem('pendingNotify');
-                    localStorage.removeItem('inprogressNotify');
-                    localStorage.removeItem(`completeNotify_${userOrderId}`);
+                    continue;
+                }
+
+                if (order) {
+                    if (order.status === 'inprogress') {
+                        if (!localStorage.getItem('inprogressNotify')) {
+                            localStorage.setItem('inprogressNotify', 'true');
+                            playSound(); // Play sound for in progress
+                            showPopup('inprogress-popup');
+                        }
+                    } else if (order.status === 'completed') {
+                        if (!localStorage.getItem('completeNotify')) {
+                            localStorage.setItem('completeNotify', 'true');
+                            playSound(); // Play sound for completed
+                            showPopup('completed-popup');
+                            // Reset notification flags
+                            resetNotificationFlags();
+                            removeOrderFromLocalStorage(userOrderId);
+                        }
+                    }
                 }
             }
         }
+    }
+
+    function removeOrderFromLocalStorage(orderId) {
+        let orderIds = JSON.parse(localStorage.getItem('orderIds')) || [];
+        orderIds = orderIds.filter(id => id !== orderId);
+        if (orderIds.length > 0) {
+            localStorage.setItem('orderIds', JSON.stringify(orderIds));
+        } else {
+            localStorage.removeItem('orderIds');
+        }
+    }
+
+    function resetNotificationFlags() {
+        localStorage.removeItem('inprogressNotify');
+        localStorage.removeItem('completeNotify');
     }
 
     function playSound() {
