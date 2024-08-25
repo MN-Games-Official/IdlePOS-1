@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -216,45 +217,36 @@
     <audio id="welcome" src="advertising-logo-199582.mp3" preload="auto"></audio>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script>
-   // Initialize Supabase
+    // Initialize Supabase
     const supabase = window.supabase.createClient('https://utgmmvofnginuwvzajig.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Z21tdm9mbmdpbnV3dnphamlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjE5NTczMzksImV4cCI6MjAzNzUzMzMzOX0.YWH5Ceiz0OI_h8M6wG1M2UsDXM_43i5UdopmYLGO7aE');
     const sound = document.getElementById('sound');
     const welcome = document.getElementById('welcome');
-    let drinksData = [];
-    let isPageVisible = true;
 
-    // Visibility API to detect if the page is in the foreground
-    document.addEventListener('visibilitychange', () => {
-        isPageVisible = !document.hidden;
-        if (isPageVisible) {
-            // If the page becomes visible, check order status and update title
-            checkOrderStatus();
-        }
-    });
+    let drinksData = [];
 
     document.getElementById('explore-button').addEventListener('click', async () => {
         document.getElementById('welcome-popup').style.display = 'none';
         document.getElementById('menu').style.display = 'block';
+            // Play intro sound muted
+        console.log(`Sound muted: ${sound.muted}`)
+            welcome.play();
+                await fetchDrinks();
+            renderDrinkCards();
+            sound.muted = true; // Mute audio
+        console.log(`Sound muted: ${sound.muted}`)
+            sound.play().catch(error => {
+                console.error('Error playing intro sound:', error);
+            });
 
-        // Play intro sound muted
-        console.log(`Sound muted: ${sound.muted}`)
-        welcome.play();
-        await fetchDrinks();
-        renderDrinkCards();
-        sound.muted = true; // Mute audio
-        console.log(`Sound muted: ${sound.muted}`)
-        sound.play().catch(error => {
-            console.error('Error playing intro sound:', error);
+            sound.onended = function(){
+                sound.muted = false; // Unmute audio
+                console.log(`Sound muted: ${sound.muted}`)
+            };
         });
-
-        sound.onended = function(){
-            sound.muted = false; // Unmute audio
-            console.log(`Sound muted: ${sound.muted}`)
-        };
-    });
-
     async function fetchDrinks() {
-        const { data, error } = await supabase.from('drinks').select('*');
+        const { data, error } = await supabase
+            .from('drinks')
+            .select('*');
 
         if (error) {
             console.error('Error fetching drinks:', error);
@@ -331,9 +323,14 @@
             document.getElementById('order-message').innerText = 'Error placing order!';
             return;
         }
-
-        // Store order ID in localStorage
+        /*sound.volume = 0.2
+        sound.play
+         sound.onended = function(){
+                sound.muted = 1.0; // Unmute audio
+            };*/
+        // Retrieve existing orders from localStorage
         let orderIds = JSON.parse(localStorage.getItem('orderIds')) || [];
+        // Add the new order ID to the list
         orderIds.push(id);
         localStorage.setItem('orderIds', JSON.stringify(orderIds));
         localStorage.setItem('pendingNotify', 'true'); // Set pendingNotify to true
@@ -364,84 +361,96 @@
         }
     }
 
-    // Poll for order status
-    async function checkOrderStatus() {
-        const orderIds = JSON.parse(localStorage.getItem('orderIds')) || [];
-        if (orderIds.length > 0) {
-            for (const userOrderId of orderIds) {
-                const { data: order, error } = await supabase
-                    .from('orders')
-                    .select('*')
-                    .eq('id', userOrderId)
-                    .single();
+// Poll for order status
+async function checkOrderStatus() {
+    const orderIds = JSON.parse(localStorage.getItem('orderIds')) || [];
+    if (orderIds.length > 0) {
+        for (const userOrderId of orderIds) {
+            const { data: order, error } = await supabase
+                .from('orders')
+                .select('*')
+                .eq('id', userOrderId)
+                .single();
 
-                if (error) {
-                    if (error.code === 'PGRST116') {
-                        document.title = "Your order is complete"
-                        // Treat PGRST116 error as a completed order
-                        if (!localStorage.getItem('completeNotify')) {
-                            localStorage.setItem('completeNotify', 'true');
-                            playSound(); // Play sound for completed
-                            showPopup('completed-popup');
-                            // Reset notification flags
-                            resetNotificationFlags();
-                            // Remove the completed order ID
-                            removeOrderFromLocalStorage(userOrderId);
-                        }
-                    } else {
-                        console.error(error);
+            if (error) {
+                if (error.code === 'PGRST116') {
+                    document.title = "Your order is complete";
+                    if (!localStorage.getItem('completeNotify')) {
+                        localStorage.setItem('completeNotify', 'true');
+                        triggerSoundAndPopup('completed-popup');
+                        removeOrderFromLocalStorage(userOrderId);
                     }
-                    continue;
+                } else {
+                    console.error(error);
                 }
+                continue;
+            }
 
-                if (order) {
-                    if (order.status === 'inprogress') {
-                        document.title = "Order in progress"
-                        if (!localStorage.getItem('inprogressNotify')) {
-                            localStorage.setItem('inprogressNotify', 'true');
-                            playSound(); // Play sound for in progress
-                            showPopup('inprogress-popup');
-                        }
-                    } else if (order.status === 'completed') {
-                        if (!localStorage.getItem('completeNotify')) {
-                            localStorage.setItem('completeNotify', 'true');
-                            playSound(); // Play sound for completed
-                            showPopup('completed-popup');
-                            // Reset notification flags
-                            resetNotificationFlags();
-                            removeOrderFromLocalStorage(userOrderId);
-                        }
+            if (order) {
+                if (order.status === 'inprogress') {
+                    document.title = "Order in progress";
+                    if (!localStorage.getItem('inprogressNotify')) {
+                        localStorage.setItem('inprogressNotify', 'true');
+                        triggerSoundAndPopup('inprogress-popup');
+                    }
+                } else if (order.status === 'completed') {
+                    document.title = "Your order is complete";
+                    if (!localStorage.getItem('completeNotify')) {
+                        localStorage.setItem('completeNotify', 'true');
+                        triggerSoundAndPopup('completed-popup');
+                        removeOrderFromLocalStorage(userOrderId);
                     }
                 }
             }
         }
     }
+}
 
-    function removeOrderFromLocalStorage(orderId) {
-        let orderIds = JSON.parse(localStorage.getItem('orderIds')) || [];
-        orderIds = orderIds.filter(id => id !== orderId);
-        if (orderIds.length > 0) {
-            localStorage.setItem('orderIds', JSON.stringify(orderIds));
-        } else {
-            localStorage.removeItem('orderIds');
-        }
+// Function to trigger sound and popup
+function triggerSoundAndPopup(popupId) {
+    // Ensure the sound is played by a user interaction
+    playSound();
+    showPopup(popupId);
+}
+
+// Handle visibility change
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        // Recheck order status when user returns to the page
+        checkOrderStatus();
     }
+});
 
-    function resetNotificationFlags() {
-        localStorage.removeItem('inprogressNotify');
-        localStorage.removeItem('completeNotify');
+// Function to remove order from local storage
+function removeOrderFromLocalStorage(orderId) {
+    let orderIds = JSON.parse(localStorage.getItem('orderIds')) || [];
+    orderIds = orderIds.filter(id => id !== orderId);
+    if (orderIds.length > 0) {
+        localStorage.setItem('orderIds', JSON.stringify(orderIds));
+    } else {
+        localStorage.removeItem('orderIds');
     }
+    resetNotificationFlags();
+}
 
-    function playSound() {
-        if (isPageVisible) {
-            sound.play().catch(error => {
-                console.error('Error playing sound:', error);
-            });
-        }
+// Reset notification flags
+function resetNotificationFlags() {
+    localStorage.removeItem('inprogressNotify');
+    localStorage.removeItem('completeNotify');
+}
+
+// Function to play sound
+function playSound() {
+    // Play the sound only if the document is visible
+    if (document.visibilityState === 'visible') {
+        sound.play().catch(error => {
+            console.error('Failed to play sound:', error);
+        });
     }
+}
 
-    // Check order status every 10 seconds
-    setInterval(checkOrderStatus, 10000);
+// Regularly check order status
+setInterval(checkOrderStatus, 5000); // Check every 5 seconds
 </script>
 </body>
 </html>
