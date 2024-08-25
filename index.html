@@ -230,7 +230,7 @@
             welcome.play();
                 await fetchDrinks();
             renderDrinkCards();
-            sound.volume = 0.01; // Mute audio
+            sound.volume = 0.1; // Mute audio
             sound.play().catch(error => {
                 console.error('Error playing intro sound:', error);
             });
