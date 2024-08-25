@@ -118,6 +118,24 @@
             background-color: #218838;
         }
 
+        /* Loading Screen */
+        #loading-screen {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 400px;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            z-index: 1000;
+            text-align: center;
+        }
+
         /* Responsive design for smaller screens */
         @media (max-width: 600px) {
             .popup .title {
@@ -140,8 +158,14 @@
     <!-- Welcome Popup -->
     <div id="welcome-popup">
         <h1>Welcome!</h1>
-        <p>We're glad to have you here. Click the button below to explore our drinks selection and order as you please!</p>
+        <p>We're glad to have you here. Click the button below to explore our drink selection.</p>
         <button id="explore-button">Explore Drink Selection</button>
+    </div>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <h2>Loading Assets...</h2>
+        <p id="countdown-timer">Please wait...</p>
     </div>
 
     <div id="menu" style="display: none;">
@@ -186,26 +210,41 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script>
-        // Initialize Supabase
         const supabase = window.supabase.createClient('https://utgmmvofnginuwvzajig.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Z21tdm9mbmdpbnV3dnphamlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjE5NTczMzksImV4cCI6MjAzNzUzMzMzOX0.YWH5Ceiz0OI_h8M6wG1M2UsDXM_43i5UdopmYLGO7aE');
         const sound = document.getElementById('sound');
+        const loadingScreen = document.getElementById('loading-screen');
+        const countdownTimer = document.getElementById('countdown-timer');
+        let audioDuration = 0;
 
-        // User interaction to unlock audio on iOS
         document.getElementById('explore-button').addEventListener('click', () => {
-            // Hide welcome popup and show menu
+            // Show loading screen
+            loadingScreen.style.display = 'block';
             document.getElementById('welcome-popup').style.display = 'none';
-            document.getElementById('menu').style.display = 'block';
 
-            // Play intro sound muted
+            sound.addEventListener('loadedmetadata', () => {
+                audioDuration = sound.duration;
+            });
+
             sound.muted = true; // Mute audio
             sound.play().catch(error => {
                 console.error('Error playing intro sound:', error);
             });
 
-            // Unmute audio once it has ended
             sound.addEventListener('ended', () => {
                 sound.muted = false; // Unmute audio
+                loadingScreen.style.display = 'none'; // Hide loading screen
+                document.getElementById('menu').style.display = 'block'; // Show menu
             });
+
+            // Update countdown every second
+            const intervalId = setInterval(() => {
+                const remainingTime = Math.ceil(audioDuration - sound.currentTime);
+                countdownTimer.textContent = `Please wait... ${remainingTime} seconds left`;
+
+                if (sound.paused || sound.ended) {
+                    clearInterval(intervalId);
+                }
+            }, 1000);
         });
 
         document.getElementById('order-button').addEventListener('click', () => {
@@ -253,7 +292,6 @@
             }
         }
 
-        // Poll for order status
         async function checkOrderStatus() {
             const userOrderId = localStorage.getItem('orderId');
             if (userOrderId) {
@@ -265,10 +303,9 @@
 
                 if (error) {
                     if (error.code === 'PGRST116') {
-                        // Treat PGRST116 error as a completed order
                         if (!localStorage.getItem('completeNotify')) {
                             localStorage.setItem('completeNotify', 'true');
-                            playSound(); // Play sound for completed
+                            playSound();
                             showPopup('completed-popup');
                             localStorage.removeItem('orderId');
                             localStorage.removeItem('pendingNotify');
@@ -285,13 +322,13 @@
                     if (order.status === 'inprogress') {
                         if (!localStorage.getItem('inprogressNotify')) {
                             localStorage.setItem('inprogressNotify', 'true');
-                            playSound(); // Play sound for in progress
+                            playSound();
                             showPopup('inprogress-popup');
                         }
                     } else if (order.status === 'completed') {
                         if (!localStorage.getItem('completeNotify')) {
                             localStorage.setItem('completeNotify', 'true');
-                            playSound(); // Play sound for completed
+                            playSound();
                             showPopup('completed-popup');
                             localStorage.removeItem('orderId');
                             localStorage.removeItem('pendingNotify');
@@ -304,13 +341,12 @@
         }
 
         function playSound() {
-            // Ensure the sound is played by a user interaction
             sound.play().catch(error => {
                 console.error('Failed to play sound:', error);
             });
         }
 
-        setInterval(checkOrderStatus, 5000); // Check every 5 seconds
+        setInterval(checkOrderStatus, 5000);
     </script>
 </body>
 </html>
