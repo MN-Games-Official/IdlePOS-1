@@ -361,24 +361,23 @@
                     .single();
 
                 if (error) {
-                    if (error.code === 'PGRST116') {
+ if (error.code === 'PGRST116') {
                         // Treat PGRST116 error as a completed order
+                        document.title = "Your order is complete"
                         if (!localStorage.getItem('completeNotify')) {
                             localStorage.setItem('completeNotify', 'true');
-                            document.title = "Your order is complete"
                             playSound(); // Play sound for completed
                             showPopup('completed-popup');
-                            // Reset notification flags
-                            resetNotificationFlags();
-                            // Remove the completed order ID
-                            removeOrderFromLocalStorage(userOrderId);
+                            localStorage.removeItem('orderId');
+                            localStorage.removeItem('pendingNotify');
+                            localStorage.removeItem('inprogressNotify');
+                            localStorage.removeItem('completeNotify');
                         }
                     } else {
                         console.error(error);
                     }
-                    continue;
+                    return;
                 }
-
                 if (order) {
                     if (order.status === 'inprogress') {
                         if (!localStorage.getItem('inprogressNotify')) {
