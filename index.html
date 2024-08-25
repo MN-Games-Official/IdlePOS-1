@@ -16,13 +16,14 @@
             justify-content: center;
             height: 100vh;
         }
-        #menu, #order-form {
+        #menu, #order-form, #drink-details {
             background-color: #fff;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             padding: 20px;
             width: 300px;
             text-align: center;
+            display: none;
         }
         button {
             background-color: #007BFF;
@@ -115,6 +116,47 @@
         #welcome-popup button:hover {
             background-color: #218838;
         }
+        /* Drink cards styling */
+        #drink-cards {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+        .drink-card {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 15px;
+            width: 200px;
+            text-align: center;
+        }
+        .drink-card h3 {
+            margin: 0;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        .drink-card p {
+            font-size: 14px;
+            color: #666;
+        }
+        .drink-card button {
+            background-color: #007BFF;
+            margin-top: 10px;
+            width: 100%;
+        }
+        .drink-card button:hover {
+            background-color: #0056b3;
+        }
+        #drink-details {
+            display: none;
+        }
+        #drink-details h2 {
+            margin-bottom: 15px;
+        }
+        #drink-details p {
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
@@ -125,20 +167,24 @@
         <button id="explore-button">Explore Drink Selection</button>
     </div>
 
-    <div id="menu" style="display: none;">
-        <h1>Drink Order System</h1>
-        <button id="order-button">Get a Drink</button>
+    <div id="menu">
+        <h1>Drink Menu</h1>
+        <div id="drink-cards"></div>
     </div>
 
-    <div id="order-form" style="display: none;">
+    <div id="drink-details">
+        <h2 id="drink-name"></h2>
+        <p id="drink-description"></p>
+        <p id="drink-ingredients"></p>
+        <button id="order-drink-button">Order this Drink</button>
+        <button id="back-to-menu-button">Back to Menu</button>
+    </div>
+
+    <div id="order-form">
         <h2>Order Form</h2>
         <form id="drink-form">
             <label for="drink">Select Drink:</label>
-            <select id="drink" name="drink">
-                <option value="Coke">Coke</option>
-                <option value="Pepsi">Pepsi</option>
-                <option value="Water">Water</option>
-            </select>
+            <select id="drink" name="drink"></select>
             <button type="submit">Place Order</button>
         </form>
         <p id="order-message"></p>
@@ -170,31 +216,84 @@
         // Initialize Supabase
         const supabase = window.supabase.createClient('https://utgmmvofnginuwvzajig.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Z21tdm9mbmdpbnV3dnphamlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjE5NTczMzksImV4cCI6MjAzNzUzMzMzOX0.YWH5Ceiz0OI_h8M6wG1M2UsDXM_43i5UdopmYLGO7aE');
         const sound = document.getElementById('sound');
-        const welcome = document.getElementById('welcome')
+        const welcome = document.getElementById('welcome');
 
-        // User interaction to unlock audio on iOS
-        document.getElementById('explore-button').addEventListener('click', () => {
-            // Hide welcome popup and show menu
+        let drinksData = [];
+
+        document.getElementById('explore-button').addEventListener('click', async () => {
             document.getElementById('welcome-popup').style.display = 'none';
             document.getElementById('menu').style.display = 'block';
-
-            // Play intro sound muted
             welcome.play();
-            sound.muted = true; // Mute audio
-            sound.play().catch(error => {
-                console.error('Error playing intro sound:', error);
-            });
 
-            // Unmute audio once it has ended
-            sound.addEventListener('ended', () => {
-                sound.muted = false; // Unmute audio
-            });
+            await fetchDrinks();
+            renderDrinkCards();
         });
 
-        document.getElementById('order-button').addEventListener('click', () => {
-            document.getElementById('menu').style.display = 'none';
+        async function fetchDrinks() {
+            const { data, error } = await supabase
+                .from('drinks')
+                .select('*');
+
+            if (error) {
+                console.error('Error fetching drinks:', error);
+                return;
+            }
+
+            drinksData = data;
+        }
+
+        function renderDrinkCards() {
+            const drinkCardsContainer = document.getElementById('drink-cards');
+            drinkCardsContainer.innerHTML = '';
+
+            drinksData.forEach(drink => {
+                const card = document.createElement('div');
+                card.className = 'drink-card';
+                card.innerHTML = `
+                    <h3>${drink.name}</h3>
+                    <p>${drink.description.substring(0, 50)}...</p>
+                    <button onclick="viewDrink('${drink.name}')">View this Drink</button>
+                `;
+                drinkCardsContainer.appendChild(card);
+            });
+        }
+
+        function viewDrink(drinkName) {
+            const drink = drinksData.find(d => d.name === drinkName);
+            if (drink) {
+                document.getElementById('drink-name').innerText = drink.name;
+                document.getElementById('drink-description').innerText = `Description: ${drink.description}`;
+                document.getElementById('drink-ingredients').innerText = `Ingredients: ${drink.ingredients}`;
+                document.getElementById('drink-details').style.display = 'block';
+                document.getElementById('menu').style.display = 'none';
+            }
+        }
+
+        document.getElementById('back-to-menu-button').addEventListener('click', () => {
+            document.getElementById('drink-details').style.display = 'none';
+            document.getElementById('menu').style.display = 'block';
+        });
+
+        document.getElementById('order-drink-button').addEventListener('click', () => {
+            const selectedDrink = document.getElementById('drink-name').innerText;
+            populateDrinkDropdown(selectedDrink);
+            document.getElementById('drink-details').style.display = 'none';
             document.getElementById('order-form').style.display = 'block';
         });
+
+        function populateDrinkDropdown(selectedDrink) {
+            const drinkSelect = document.getElementById('drink');
+            drinkSelect.innerHTML = '';
+            drinksData.forEach(drink => {
+                const option = document.createElement('option');
+                option.value = drink.name;
+                option.text = drink.name;
+                if (drink.name === selectedDrink) {
+                    option.selected = true;
+                }
+                drinkSelect.appendChild(option);
+            });
+        }
 
         document.getElementById('drink-form').addEventListener('submit', async (event) => {
             event.preventDefault();
