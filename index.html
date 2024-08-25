@@ -127,7 +127,7 @@
         <div class="message">Your order is ready for pickup.</div>
         <button onclick="closePopup('completed-popup')">Close</button>
     </div>
-
+    
     <audio id="progress-sound" src="225661-ComputerSFX-alerts-071.wav" preload="auto"></audio>
     <audio id="completed-sound" src="225661-ComputerSFX-alerts-071.wav" preload="auto"></audio>
 
@@ -146,6 +146,18 @@
 
         document.getElementById('drink-form').addEventListener('submit', async (event) => {
             event.preventDefault();
+    const progressSound = document.getElementById('progress-sound');
+    if (progressSound) {
+        progressSound.muted = true; // Mute the audio
+        progressSound.play().catch(error => {
+            console.error('Error playing sound:', error);
+        });
+
+        // Unmute the audio after it finishes playing
+        progressSound.addEventListener('ended', () => {
+            progressSound.muted = false; // Unmute the audio
+        });
+    }
             const drink = document.getElementById('drink').value;
             const id = Math.floor(1000 + Math.random() * 9000); // Generate a 4-digit ID
 
