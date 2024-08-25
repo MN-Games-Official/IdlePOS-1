@@ -226,17 +226,19 @@
     document.getElementById('explore-button').addEventListener('click', async () => {
         document.getElementById('welcome-popup').style.display = 'none';
         document.getElementById('menu').style.display = 'block';
-        await fetchDrinks();
-        renderDrinkCards();
-        sound.muted = true; // Mute audio
-        sound.play().catch(error => {
-            console.error('Error playing intro sound:', error);
-        });
+            // Play intro sound muted
+            welcome.play();
+                await fetchDrinks();
+            renderDrinkCards();
+            sound.muted = true; // Mute audio
+            sound.play().catch(error => {
+                console.error('Error playing intro sound:', error);
+            });
 
-        sound.onended = function(){
-            sound.muted = false; // Unmute audio
-        };
-    });
+            sound.onended = function(){
+                sound.muted = false; // Unmute audio
+            };
+        });
 
     async function fetchDrinks() {
         const { data, error } = await supabase
