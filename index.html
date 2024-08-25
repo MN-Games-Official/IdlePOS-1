@@ -342,16 +342,17 @@
             popup.classList.add('show');
         }
     }
-
-    function closePopup(popupId) {
-        const popup = document.getElementById(popupId);
-        if (popup) {
-   popup.classList.remove('show');
-            if (popupId === 'success-popup') {
-                document.getElementById('order-form').style.display = 'none';
-                document.getElementById('menu').style.display = 'block';
+function closePopup(popupId) {
+    const popup = document.getElementById(popupId);
+    if (popup) {
+        popup.classList.remove('show');
+        if (popupId === 'success-popup') {
+            document.getElementById('order-form').style.display = 'none';
+            document.getElementById('menu').style.display = 'block';
         }
     }
+}
+
 
     // Poll for order status
     async function checkOrderStatus() {
