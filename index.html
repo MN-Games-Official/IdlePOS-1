@@ -164,12 +164,13 @@
     </div>
 
     <audio id="sound" src="225661-ComputerSFX-alerts-071.wav" preload="auto"></audio>
-
+    <audio id="welcome" src="advertising-logo-199582.mp3" preload="auto"></audio>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script>
         // Initialize Supabase
         const supabase = window.supabase.createClient('https://utgmmvofnginuwvzajig.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Z21tdm9mbmdpbnV3dnphamlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjE5NTczMzksImV4cCI6MjAzNzUzMzMzOX0.YWH5Ceiz0OI_h8M6wG1M2UsDXM_43i5UdopmYLGO7aE');
         const sound = document.getElementById('sound');
+        const welcome = document.getElementById('welcome')
 
         // User interaction to unlock audio on iOS
         document.getElementById('explore-button').addEventListener('click', () => {
@@ -178,6 +179,7 @@
             document.getElementById('menu').style.display = 'block';
 
             // Play intro sound muted
+            welcome.play();
             sound.muted = true; // Mute audio
             sound.play().catch(error => {
                 console.error('Error playing intro sound:', error);
