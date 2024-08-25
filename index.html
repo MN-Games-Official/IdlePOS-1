@@ -36,11 +36,17 @@
         </form>
         <p id="order-message"></p>
     </div>
+
+    <audio id="progress-sound" src="225661-ComputerSFX-alerts-071.wav" preload="auto"></audio>
+    <audio id="completed-sound" src="225661-ComputerSFX-alerts-071.wav" preload="auto"></audio>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script>
         // Initialize Supabase
         const supabase = window.supabase.createClient('https://utgmmvofnginuwvzajig.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Z21tdm9mbmdpbnV3dnphamlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjE5NTczMzksImV4cCI6MjAzNzUzMzMzOX0.YWH5Ceiz0OI_h8M6wG1M2UsDXM_43i5UdopmYLGO7aE');
-          document.getElementById('order-button').addEventListener('click', () => {
+        const progressSound = document.getElementById('progress-sound');
+        const completedSound = document.getElementById('completed-sound');
+
+        document.getElementById('order-button').addEventListener('click', () => {
             document.getElementById('menu').style.display = 'none';
             document.getElementById('order-form').style.display = 'block';
         });
@@ -83,15 +89,23 @@
                     return;
                 }
 
-                if (order && order.status === 'inprogress') {
-                    if (!localStorage.getItem('pendingNotified')) {
-                        localStorage.setItem('pendingNotified', 'true');
-                        alert('Your order is now in progress');
+                if (order) {
+                    if (order.status === 'inprogress') {
+                        if (!localStorage.getItem('pendingNotified')) {
+                            localStorage.setItem('pendingNotified', 'true');
+                            progressSound.play(); // Play sound for in progress
+                            alert('Your order is now in progress');
+                        }
+                    } else if (order.status === 'completed') {
+                        if (!localStorage.getItem('completedNotified')) {
+                            localStorage.setItem('completedNotified', 'true');
+                            completedSound.play(); // Play sound for completed
+                            alert('Your order is ready for pickup');
+                            localStorage.removeItem('orderId');
+                            localStorage.removeItem('pendingNotified');
+                            localStorage.removeItem('completedNotified');
+                        }
                     }
-                } else if (order && order.status === 'completed') {
-                    alert('Your order is ready for pickup');
-                    localStorage.removeItem('orderId');
-                    localStorage.removeItem('pendingNotified');
                 }
             }
         }
