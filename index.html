@@ -230,13 +230,13 @@
             welcome.play();
                 await fetchDrinks();
             renderDrinkCards();
-            sound.muted = true; // Mute audio
+            sound.volume = 0.01; // Mute audio
             sound.play().catch(error => {
                 console.error('Error playing intro sound:', error);
             });
 
             sound.onended = function(){
-                sound.muted = false; // Unmute audio
+                sound.volume = 1.0; // Unmute audio
             };
         });
 
