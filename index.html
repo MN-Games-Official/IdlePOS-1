@@ -87,10 +87,45 @@
         .popup button:hover {
             background-color: #c82333;
         }
+        /* New welcome popup styles */
+        #welcome-popup {
+            display: block; /* Display on page load */
+            position: fixed;
+            top: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            z-index: 1000;
+            text-align: center;
+        }
+        #welcome-popup button {
+            background-color: #28a745;
+            border: none;
+            border-radius: 5px;
+            color: #fff;
+            cursor: pointer;
+            padding: 10px;
+            font-size: 16px;
+        }
+        #welcome-popup button:hover {
+            background-color: #218838;
+        }
     </style>
 </head>
 <body>
-    <div id="menu">
+    <!-- Welcome Popup -->
+    <div id="welcome-popup">
+        <h1>Welcome!</h1>
+        <p>We're glad to have you here. Click the button below to explore our drink selection.</p>
+        <button id="explore-button">Explore Drink Selection</button>
+    </div>
+
+    <div id="menu" style="display: none;">
         <h1>Drink Order System</h1>
         <button id="order-button">Get a Drink</button>
     </div>
@@ -128,17 +163,32 @@
         <button onclick="closePopup('completed-popup')">Close</button>
     </div>
 
-    <audio id="progress-sound" src="225661-ComputerSFX-alerts-071.wav" preload="auto"></audio>
-    <audio id="completed-sound" src="225661-ComputerSFX-alerts-071.wav" preload="auto"></audio>
+    <audio id="sound" src="225661-ComputerSFX-alerts-071.wav" preload="auto"></audio>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script>
         // Initialize Supabase
         const supabase = window.supabase.createClient('https://utgmmvofnginuwvzajig.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Z21tdm9mbmdpbnV3dnphamlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjE5NTczMzksImV4cCI6MjAzNzUzMzMzOX0.YWH5Ceiz0OI_h8M6wG1M2UsDXM_43i5UdopmYLGO7aE');
-        const progressSound = document.getElementById('progress-sound');
-        const completedSound = document.getElementById('completed-sound');
+        const sound = document.getElementById('sound');
 
         // User interaction to unlock audio on iOS
+        document.getElementById('explore-button').addEventListener('click', () => {
+            // Hide welcome popup and show menu
+            document.getElementById('welcome-popup').style.display = 'none';
+            document.getElementById('menu').style.display = 'block';
+
+            // Play intro sound muted
+            sound.muted = true; // Mute audio
+            sound.play().catch(error => {
+                console.error('Error playing intro sound:', error);
+            });
+
+            // Unmute audio once it has ended
+            sound.addEventListener('ended', () => {
+                sound.muted = false; // Unmute audio
+            });
+        });
+
         document.getElementById('order-button').addEventListener('click', () => {
             document.getElementById('menu').style.display = 'none';
             document.getElementById('order-form').style.display = 'block';
@@ -199,7 +249,7 @@
                         // Treat PGRST116 error as a completed order
                         if (!localStorage.getItem('completeNotify')) {
                             localStorage.setItem('completeNotify', 'true');
-                            playCompletedSound(); // Play sound for completed
+                            playSound(); // Play sound for completed
                             showPopup('completed-popup');
                             localStorage.removeItem('orderId');
                             localStorage.removeItem('pendingNotify');
@@ -216,13 +266,13 @@
                     if (order.status === 'inprogress') {
                         if (!localStorage.getItem('inprogressNotify')) {
                             localStorage.setItem('inprogressNotify', 'true');
-                            playProgressSound(); // Play sound for in progress
+                            playSound(); // Play sound for in progress
                             showPopup('inprogress-popup');
                         }
                     } else if (order.status === 'completed') {
                         if (!localStorage.getItem('completeNotify')) {
                             localStorage.setItem('completeNotify', 'true');
-                            playCompletedSound(); // Play sound for completed
+                            playSound(); // Play sound for completed
                             showPopup('completed-popup');
                             localStorage.removeItem('orderId');
                             localStorage.removeItem('pendingNotify');
@@ -234,17 +284,10 @@
             }
         }
 
-        function playProgressSound() {
+        function playSound() {
             // Ensure the sound is played by a user interaction
-            progressSound.play().catch(error => {
-                console.error('Failed to play progress sound:', error);
-            });
-        }
-
-        function playCompletedSound() {
-            // Ensure the sound is played by a user interaction
-            completedSound.play().catch(error => {
-                console.error('Failed to play completed sound:', error);
+            sound.play().catch(error => {
+                console.error('Failed to play sound:', error);
             });
         }
 
