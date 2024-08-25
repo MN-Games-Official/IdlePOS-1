@@ -178,13 +178,6 @@
             currentOrderId = id;
 
             // Notify user via serverless function
-            await fetch('/api/notify-user', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ orderId: id }),
-            });
 
             // Show order details after updating status
             const { data: orderDetails, error: detailsError } = await supabase
@@ -222,16 +215,6 @@
 
             // Hide order details
             document.getElementById('order-details').style.display = 'none';
-
-            // Notify user via serverless function
-            await fetch('/api/complete-order', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ orderId: id }),
-            });
-
             // Reload orders
             loadOrders();
         }
