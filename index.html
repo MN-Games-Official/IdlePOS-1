@@ -227,14 +227,13 @@
             // Play intro sound muted
             welcome.play();
                 await fetchDrinks();
-        renderDrinkCards();
+            renderDrinkCards();
             sound.muted = true; // Mute audio
             sound.play().catch(error => {
                 console.error('Error playing intro sound:', error);
             });
 
-            // Unmute audio once it has ended
-            sound.addEventListener('ended', () => {
+            sound.onended = function(){
                 sound.muted = false; // Unmute audio
             });
         });
