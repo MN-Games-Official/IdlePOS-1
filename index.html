@@ -36,12 +36,11 @@
         </form>
         <p id="order-message"></p>
     </div>
-
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script>
         // Initialize Supabase
         const supabase = window.supabase.createClient('https://utgmmvofnginuwvzajig.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Z21tdm9mbmdpbnV3dnphamlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjE5NTczMzksImV4cCI6MjAzNzUzMzMzOX0.YWH5Ceiz0OI_h8M6wG1M2UsDXM_43i5UdopmYLGO7aE');
-        document.getElementById('order-button').addEventListener('click', () => {
+       document.getElementById('order-button').addEventListener('click', () => {
             document.getElementById('menu').style.display = 'none';
             document.getElementById('order-form').style.display = 'block';
         });
@@ -63,6 +62,16 @@
 
             localStorage.setItem('orderId', id);
             document.getElementById('order-message').innerText = `Order placed successfully! Your Order ID is ${id}`;
+
+            // Notify the bartender via Vercel serverless function
+            await fetch('/api/notify-user', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ orderId: id }),
+            });
+
             setTimeout(() => {
                 document.getElementById('order-form').style.display = 'none';
                 document.getElementById('menu').style.display = 'block';
