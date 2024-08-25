@@ -9,7 +9,7 @@
             font-family: Arial, sans-serif;
             padding: 20px;
         }
-        #order-list, #stats {
+        #order-list, #stats, #order-details {
             margin: 20px;
         }
         button {
@@ -28,10 +28,19 @@
         <ul id="drink-stats"></ul>
     </div>
 
+    <div id="order-details" style="display: none;">
+        <h2>Order Details</h2>
+        <p id="order-info"></p>
+        <button id="complete-button">Complete Order</button>
+    </div>
+
+    <audio id="alert-sound" src="225661-ComputerSFX-alerts-071.wav" preload="auto"></audio>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script>
         // Initialize Supabase
    const supabase = window.supabase.createClient('https://utgmmvofnginuwvzajig.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Z21tdm9mbmdpbnV3dnphamlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjE5NTczMzksImV4cCI6MjAzNzUzMzMzOX0.YWH5Ceiz0OI_h8M6wG1M2UsDXM_43i5UdopmYLGO7aE');
+   const alertSound = document.getElementById('alert-sound');
 
         async function loadOrders() {
             const { data: orders, error } = await supabase
@@ -53,14 +62,9 @@
                 
                 const acceptButton = document.createElement('button');
                 acceptButton.innerText = 'Accept';
-                acceptButton.addEventListener('click', () => acceptOrder(order.id));
-                
-                const completeButton = document.createElement('button');
-                completeButton.innerText = 'Complete';
-                completeButton.addEventListener('click', () => completeOrder(order.id));
+                acceptButton.addEventListener('click', () => showOrderDetails(order));
 
                 li.appendChild(acceptButton);
-                li.appendChild(completeButton);
                 orderItems.appendChild(li);
             });
         }
@@ -68,8 +72,7 @@
         async function loadDrinkStats() {
             const { data: orders, error } = await supabase
                 .from('orders')
-                .select('drink, count(id)')
-                .group('drink');
+                .select('*');
 
             if (error) {
                 console.error(error);
@@ -77,13 +80,29 @@
             }
 
             const drinkStats = document.getElementById('drink-stats');
-            drinkStats.innerHTML = '';
+            const drinkCount = {};
 
-            orders.forEach(stat => {
-                const li = document.createElement('li');
-                li.innerText = `${stat.drink}: ${stat.count}`;
-                drinkStats.appendChild(li);
+            // Aggregate statistics
+            orders.forEach(order => {
+                if (!drinkCount[order.drink]) {
+                    drinkCount[order.drink] = 0;
+                }
+                drinkCount[order.drink]++;
             });
+
+            drinkStats.innerHTML = '';
+            for (const [drink, count] of Object.entries(drinkCount)) {
+                const li = document.createElement('li');
+                li.innerText = `${drink}: ${count}`;
+                drinkStats.appendChild(li);
+            }
+        }
+
+        async function showOrderDetails(order) {
+            document.getElementById('order-details').style.display = 'block';
+            document.getElementById('order-info').innerText = `Order ID: ${order.id} - Drink: ${order.drink}`;
+
+            document.getElementById('complete-button').onclick = () => completeOrder(order.id);
         }
 
         async function acceptOrder(id) {
@@ -97,6 +116,7 @@
                 return;
             }
 
+            alertSound.play(); // Play sound for alert
             alert('Order is in progress');
 
             // Notify user via Vercel serverless function
@@ -123,6 +143,7 @@
                 return;
             }
 
+            alertSound.play(); // Play sound for alert
             alert('Order completed. Please notify the user to pick up.');
 
             // Notify user via Vercel serverless function
@@ -133,6 +154,9 @@
                 },
                 body: JSON.stringify({ orderId: id }),
             });
+
+            // Hide order details
+            document.getElementById('order-details').style.display = 'none';
 
             // Reload orders and stats
             loadOrders();
