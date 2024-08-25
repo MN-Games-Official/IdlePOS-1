@@ -96,6 +96,7 @@
             <button type="submit">Place Order</button>
         </form>
         <p id="order-message"></p>
+        <button id="close-form-button">Close</button>
     </div>
 
     <!-- Popup notifications -->
@@ -143,19 +144,18 @@
             localStorage.setItem('orderId', id);
             localStorage.setItem('pendingNotify', 'true'); // Set pendingNotify to true
             document.getElementById('order-message').innerText = `Order placed successfully! Your Order ID is ${id}`;
-            setTimeout(() => {
-                document.getElementById('order-form').style.display = 'none';
-                document.getElementById('menu').style.display = 'block';
-            }, 3000);
+            // Do not automatically hide the order form
+        });
+
+        document.getElementById('close-form-button').addEventListener('click', () => {
+            document.getElementById('order-form').style.display = 'none';
+            document.getElementById('menu').style.display = 'block';
         });
 
         function showPopup(popupId) {
             const popup = document.getElementById(popupId);
             if (popup) {
                 popup.classList.add('show');
-                setTimeout(() => {
-                    popup.classList.remove('show');
-                }, 5000); // Hide the popup after 5 seconds
             }
         }
 
