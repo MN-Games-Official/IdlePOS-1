@@ -45,24 +45,35 @@
         .popup {
             display: none;
             position: fixed;
-            top: 20px;
-            right: 20px;
-            background-color: #fff;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: #fff;
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             padding: 20px;
-            width: 250px;
             z-index: 1000;
+            overflow: auto;
+            text-align: center;
         }
         .popup.show {
             display: block;
         }
         .popup .title {
+            font-size: 24px;
             font-weight: bold;
             margin-bottom: 10px;
         }
         .popup .message {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+        .popup .checkmark {
+            font-size: 100px;
+            color: #28a745;
+            margin-bottom: 20px;
         }
         .popup button {
             background-color: #dc3545;
@@ -100,6 +111,12 @@
     </div>
 
     <!-- Popup notifications -->
+    <div id="success-popup" class="popup">
+        <div class="checkmark">&#10003;</div>
+        <div class="title">Order Placed Successfully</div>
+        <div class="message">Your Order ID is <span id="order-id"></span>. You will get notifications when your drink is in progress and when it is ready!</div>
+        <button onclick="closePopup('success-popup')">Close</button>
+    </div>
     <div id="inprogress-popup" class="popup">
         <div class="title">Order Update</div>
         <div class="message">Your order is now in progress.</div>
@@ -121,6 +138,7 @@
         const progressSound = document.getElementById('progress-sound');
         const completedSound = document.getElementById('completed-sound');
 
+        // User interaction to unlock audio on iOS
         document.getElementById('order-button').addEventListener('click', () => {
             document.getElementById('menu').style.display = 'none';
             document.getElementById('order-form').style.display = 'block';
@@ -143,8 +161,8 @@
 
             localStorage.setItem('orderId', id);
             localStorage.setItem('pendingNotify', 'true'); // Set pendingNotify to true
-            document.getElementById('order-message').innerText = `Order placed successfully! Your Order ID is ${id}`;
-            // Do not automatically hide the order form
+            document.getElementById('order-id').innerText = id;
+            showPopup('success-popup');
         });
 
         document.getElementById('close-form-button').addEventListener('click', () => {
@@ -181,7 +199,7 @@
                         // Treat PGRST116 error as a completed order
                         if (!localStorage.getItem('completeNotify')) {
                             localStorage.setItem('completeNotify', 'true');
-                            completedSound.play(); // Play sound for completed
+                            playCompletedSound(); // Play sound for completed
                             showPopup('completed-popup');
                             localStorage.removeItem('orderId');
                             localStorage.removeItem('pendingNotify');
@@ -198,13 +216,13 @@
                     if (order.status === 'inprogress') {
                         if (!localStorage.getItem('inprogressNotify')) {
                             localStorage.setItem('inprogressNotify', 'true');
-                            progressSound.play(); // Play sound for in progress
+                            playProgressSound(); // Play sound for in progress
                             showPopup('inprogress-popup');
                         }
                     } else if (order.status === 'completed') {
                         if (!localStorage.getItem('completeNotify')) {
                             localStorage.setItem('completeNotify', 'true');
-                            completedSound.play(); // Play sound for completed
+                            playCompletedSound(); // Play sound for completed
                             showPopup('completed-popup');
                             localStorage.removeItem('orderId');
                             localStorage.removeItem('pendingNotify');
@@ -214,6 +232,20 @@
                     }
                 }
             }
+        }
+
+        function playProgressSound() {
+            // Ensure the sound is played by a user interaction
+            progressSound.play().catch(error => {
+                console.error('Failed to play progress sound:', error);
+            });
+        }
+
+        function playCompletedSound() {
+            // Ensure the sound is played by a user interaction
+            completedSound.play().catch(error => {
+                console.error('Failed to play completed sound:', error);
+            });
         }
 
         setInterval(checkOrderStatus, 5000); // Check every 5 seconds
