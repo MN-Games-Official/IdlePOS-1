@@ -9,29 +9,34 @@
         body {
             font-family: Arial, sans-serif;
             padding: 20px;
-            background-color: #f4f4f4;
+            background-color: #f9f9f9;
+            color: #333;
         }
         #order-list, #order-details {
-            background-color: #fff;
+            background-color: #ffffff;
             border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            margin: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin: 20px auto;
             padding: 20px;
+            max-width: 600px;
+            width: 100%;
         }
         h1, h2 {
-            color: #333;
+            color: #007BFF;
         }
         #order-items li, #ingredients-list li {
             margin-bottom: 10px;
+            font-size: 16px;
         }
         button {
             background-color: #007BFF;
             border: none;
             border-radius: 5px;
-            color: #fff;
+            color: #ffffff;
             cursor: pointer;
             font-size: 16px;
             padding: 10px 20px;
+            transition: background-color 0.3s;
         }
         button:hover {
             background-color: #0056b3;
@@ -41,9 +46,15 @@
         }
         .order-info {
             font-weight: bold;
+            margin-bottom: 15px;
         }
         .ingredients {
             margin-top: 10px;
+        }
+        .no-orders {
+            font-size: 18px;
+            color: #666;
+            text-align: center;
         }
     </style>
 </head>
@@ -51,6 +62,7 @@
     <div id="order-list">
         <h1>Pending Orders</h1>
         <ul id="order-items"></ul>
+        <p id="no-orders" class="no-orders" style="display: none;">No pending orders.</p>
     </div>
 
     <div id="order-details">
@@ -65,8 +77,10 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script>
         // Initialize Supabase
-   const supabase = window.supabase.createClient('https://utgmmvofnginuwvzajig.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Z21tdm9mbmdpbnV3dnphamlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjE5NTczMzksImV4cCI6MjAzNzUzMzMzOX0.YWH5Ceiz0OI_h8M6wG1M2UsDXM_43i5UdopmYLGO7aE');
-       const alertSound = document.getElementById('alert-sound');
+        const supabase = window.supabase.createClient('https://utgmmvofnginuwvzajig.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Z21tdm9mbmdpbnV3dnphamlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjE5NTczMzksImV4cCI6MjAzNzUzMzMzOX0.YWH5Ceiz0OI_h8M6wG1M2UsDXM_43i5UdopmYLGO7aE');
+        const alertSound = document.getElementById('alert-sound');
+
+        let currentOrderId = localStorage.getItem('currentOrderId') || null;
 
         async function loadOrders() {
             const { data: orders, error } = await supabase
@@ -80,19 +94,41 @@
             }
 
             const orderItems = document.getElementById('order-items');
+            const noOrdersMessage = document.getElementById('no-orders');
             orderItems.innerHTML = '';
 
-            orders.forEach(order => {
-                const li = document.createElement('li');
-                li.innerText = `Order ID: ${order.id} - Drink: ${order.drink}`;
-                
-                const acceptButton = document.createElement('button');
-                acceptButton.innerText = 'Accept';
-                acceptButton.addEventListener('click', () => acceptOrder(order.id));
-                
-                li.appendChild(acceptButton);
-                orderItems.appendChild(li);
-            });
+            if (orders.length === 0) {
+                noOrdersMessage.style.display = 'block';
+            } else {
+                noOrdersMessage.style.display = 'none';
+                orders.forEach(order => {
+                    const li = document.createElement('li');
+                    li.innerText = `Order ID: ${order.id} - Drink: ${order.drink}`;
+                    
+                    const acceptButton = document.createElement('button');
+                    acceptButton.innerText = 'Accept';
+                    acceptButton.disabled = (currentOrderId !== null);
+                    acceptButton.addEventListener('click', () => acceptOrder(order.id));
+                    
+                    li.appendChild(acceptButton);
+                    orderItems.appendChild(li);
+                });
+            }
+
+            if (currentOrderId) {
+                const { data: orderDetails, error: detailsError } = await supabase
+                    .from('orders')
+                    .select('*')
+                    .eq('id', currentOrderId)
+                    .single();
+
+                if (detailsError) {
+                    console.error('Error loading order details:', detailsError);
+                    return;
+                }
+
+                showOrderDetails(orderDetails);
+            }
         }
 
         async function showOrderDetails(order) {
@@ -124,6 +160,11 @@
 
         async function acceptOrder(id) {
             console.log(`Accepting order with ID: ${id}`);
+            if (currentOrderId) {
+                alert('You must complete the current order before accepting a new one.');
+                return;
+            }
+
             // Update order status to 'inprogress'
             const { data, error } = await supabase
                 .from('orders')
@@ -136,7 +177,12 @@
             }
 
             // Play sound for alert
+            alertSound.play();
             alert('Accepted order.');
+
+            // Save the current order ID in local storage
+            localStorage.setItem('currentOrderId', id);
+            currentOrderId = id;
 
             // Notify user via serverless function
             await fetch('/api/notify-user', {
@@ -178,6 +224,7 @@
             }
 
             // Play sound for alert
+            alertSound.play();
             alert('Order completed. Notifying user to pick up.');
 
             // Notify user via serverless function
@@ -192,6 +239,10 @@
             // Hide order details
             document.getElementById('order-details').style.display = 'none';
 
+            // Clear the current order ID from local storage
+            localStorage.removeItem('currentOrderId');
+            currentOrderId = null;
+
             // Reload orders
             loadOrders();
         }
@@ -199,8 +250,9 @@
         document.addEventListener('DOMContentLoaded', () => {
             loadOrders();
         });
-                    // Check for new orders every 5 seconds
-setInterval(loadOrders, 5000);
+
+        // Check for new orders every 5 seconds
+        setInterval(loadOrders, 5000);
     </script>
 </body>
 </html>
