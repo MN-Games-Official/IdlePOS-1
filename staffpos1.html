@@ -41,7 +41,7 @@
     <script>
         // Initialize Supabase
    const supabase = window.supabase.createClient('https://utgmmvofnginuwvzajig.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Z21tdm9mbmdpbnV3dnphamlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjE5NTczMzksImV4cCI6MjAzNzUzMzMzOX0.YWH5Ceiz0OI_h8M6wG1M2UsDXM_43i5UdopmYLGO7aE');
-        const alertSound = document.getElementById('alert-sound');
+       const alertSound = document.getElementById('alert-sound');
 
         async function loadOrders() {
             const { data: orders, error } = await supabase
@@ -63,7 +63,7 @@
                 
                 const acceptButton = document.createElement('button');
                 acceptButton.innerText = 'Accept';
-                acceptButton.addEventListener('click', () => showOrderDetails(order));
+                acceptButton.addEventListener('click', () => acceptOrder(order.id));
                 
                 li.appendChild(acceptButton);
                 orderItems.appendChild(li);
@@ -121,6 +121,7 @@
 
         async function acceptOrder(id) {
             console.log(`Accepting order with ID: ${id}`);
+            // Update order status to 'inprogress'
             const { data, error } = await supabase
                 .from('orders')
                 .update({ status: 'inprogress' })
@@ -131,10 +132,11 @@
                 return;
             }
 
-            alertSound.play(); // Play sound for alert
+            // Play sound for alert
+            alertSound.play();
             alert('Order is in progress');
 
-            // Notify user via serverless function (ensure correct endpoint)
+            // Notify user via serverless function
             await fetch('/api/notify-user', {
                 method: 'POST',
                 headers: {
@@ -143,8 +145,23 @@
                 body: JSON.stringify({ orderId: id }),
             });
 
+            // Show order details after updating status
+            const { data: orderDetails, error: detailsError } = await supabase
+                .from('orders')
+                .select('*')
+                .eq('id', id)
+                .single();
+
+            if (detailsError) {
+                console.error('Error loading order details:', detailsError);
+                return;
+            }
+
+            showOrderDetails(orderDetails);
+
             // Reload orders and stats
             loadOrders();
+            loadDrinkStats();
         }
 
         async function completeOrder(id) {
@@ -159,10 +176,11 @@
                 return;
             }
 
-            alertSound.play(); // Play sound for alert
+            // Play sound for alert
+            alertSound.play();
             alert('Order completed. Please notify the user to pick up.');
 
-            // Notify user via serverless function (ensure correct endpoint)
+            // Notify user via serverless function
             await fetch('/api/complete-order', {
                 method: 'POST',
                 headers: {
