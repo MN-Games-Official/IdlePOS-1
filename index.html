@@ -88,7 +88,6 @@
         .popup button:hover {
             background-color: #c82333;
         }
-        /* New welcome popup styles */
         #welcome-popup {
             display: block; /* Display on page load */
             position: fixed;
@@ -116,7 +115,6 @@
         #welcome-popup button:hover {
             background-color: #218838;
         }
-        /* Drink cards styling */
         #drink-cards {
             display: flex;
             flex-wrap: wrap;
@@ -346,18 +344,15 @@
                     .single();
 
                 if (error) {
-                    if (error.code === 'PGRST116') {
-                        // Treat PGRST116 error as a completed order
-                        document.title = "Your order is complete"
-                        if (!localStorage.getItem('completeNotify')) {
-                            localStorage.setItem('completeNotify', 'true');
-                            playSound(); // Play sound for completed
-                            showPopup('completed-popup');
-                            localStorage.removeItem('orderId');
-                            localStorage.removeItem('pendingNotify');
-                            localStorage.removeItem('inprogressNotify');
-                            localStorage.removeItem('completeNotify');
-                        }
+                    if (error.code === 'PGRST116' && !localStorage.getItem(`completeNotify_${userOrderId}`)) {
+                        // Handle the not found error as a completed order
+                        localStorage.setItem(`completeNotify_${userOrderId}`, 'true');
+                        playSound(); // Play sound for completed
+                        showPopup('completed-popup');
+                        localStorage.removeItem('orderId');
+                        localStorage.removeItem('pendingNotify');
+                        localStorage.removeItem('inprogressNotify');
+                        localStorage.removeItem(`completeNotify_${userOrderId}`);
                     } else {
                         console.error(error);
                     }
@@ -366,22 +361,20 @@
 
                 if (order) {
                     if (order.status === 'inprogress') {
-                       document.title = "Order in progress" 
+                        document.title = "Order in progress";
                         if (!localStorage.getItem('inprogressNotify')) {
                             localStorage.setItem('inprogressNotify', 'true');
                             playSound(); // Play sound for in progress
                             showPopup('inprogress-popup');
                         }
-                    } else if (order.status === 'completed') {
-                        if (!localStorage.getItem('completeNotify')) {
-                            localStorage.setItem('completeNotify', 'true');
-                            playSound(); // Play sound for completed
-                            showPopup('completed-popup');
-                            localStorage.removeItem('orderId');
-                            localStorage.removeItem('pendingNotify');
-                            localStorage.removeItem('inprogressNotify');
-                            localStorage.removeItem('completeNotify');
-                        }
+                    } else if (order.status === 'completed' && !localStorage.getItem(`completeNotify_${userOrderId}`)) {
+                        localStorage.setItem(`completeNotify_${userOrderId}`, 'true');
+                        playSound(); // Play sound for completed
+                        showPopup('completed-popup');
+                        localStorage.removeItem('orderId');
+                        localStorage.removeItem('pendingNotify');
+                        localStorage.removeItem('inprogressNotify');
+                        localStorage.removeItem(`completeNotify_${userOrderId}`);
                     }
                 }
             }
