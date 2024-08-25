@@ -224,11 +224,19 @@
     document.getElementById('explore-button').addEventListener('click', async () => {
         document.getElementById('welcome-popup').style.display = 'none';
         document.getElementById('menu').style.display = 'block';
-        welcome.play();
+            // Play intro sound muted
+            welcome.play();
+                await fetchDrinks();
+            renderDrinkCards();
+            sound.muted = true; // Mute audio
+            sound.play().catch(error => {
+                console.error('Error playing intro sound:', error);
+            });
 
-        await fetchDrinks();
-        renderDrinkCards();
-    });
+            sound.onended = function(){
+                sound.muted = false; // Unmute audio
+            };
+        });
 
     async function fetchDrinks() {
         const { data, error } = await supabase
@@ -353,6 +361,7 @@
 
                 if (error) {
                     if (error.code === 'PGRST116') {
+                        document.title = "Your order is complete"
                         // Treat PGRST116 error as a completed order
                         if (!localStorage.getItem('completeNotify')) {
                             localStorage.setItem('completeNotify', 'true');
@@ -371,6 +380,7 @@
 
                 if (order) {
                     if (order.status === 'inprogress') {
+                        document.title = "Order in progress"
                         if (!localStorage.getItem('inprogressNotify')) {
                             localStorage.setItem('inprogressNotify', 'true');
                             playSound(); // Play sound for in progress
