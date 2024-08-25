@@ -227,10 +227,12 @@
         document.getElementById('welcome-popup').style.display = 'none';
         document.getElementById('menu').style.display = 'block';
             // Play intro sound muted
+        console.log(`Sound muted: ${sound.muted}`)
             welcome.play();
                 await fetchDrinks();
             renderDrinkCards();
             sound.muted = true; // Mute audio
+        console.log(`Sound muted: ${sound.muted}`)
             sound.play().catch(error => {
                 console.error('Error playing intro sound:', error);
             });
