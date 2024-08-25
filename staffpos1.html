@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bartender Order System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        #order-list, #stats {
+            margin: 20px;
+        }
+        button {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="order-list">
+        <h1>Pending Orders</h1>
+        <ul id="order-items"></ul>
+    </div>
+
+    <div id="stats">
+        <h2>Drink Statistics</h2>
+        <ul id="drink-stats"></ul>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script>
+        // Initialize Supabase
+        const { createClient } = supabase;
+        const supabase = createClient('YOUR_SUPABASE_URL', 'YOUR_SUPABASE_KEY');
+
+        async function loadOrders() {
+            const { data: orders, error } = await supabase
+                .from('orders')
+                .select('*')
+                .eq('status', 'pending');
+
+            if (error) {
+                console.error(error);
+                return;
+            }
+
+            const orderItems = document.getElementById('order-items');
+            orderItems.innerHTML = '';
+
+            orders.forEach(order => {
+                const li = document.createElement('li');
+                li.innerText = `Order ID: ${order.id} - Drink: ${order.drink}`;
+                
+                const acceptButton = document.createElement('button');
+                acceptButton.innerText = 'Accept';
+                acceptButton.addEventListener('click', () => acceptOrder(order.id));
+                
+                li.appendChild(acceptButton);
+                orderItems.appendChild(li);
+            });
+        }
+
+        async function loadDrinkStats() {
+            const { data: orders, error } = await supabase
+                .from('orders')
+                .select('drink, count(id)')
+                .group('drink');
+
+            if (error) {
+                console.error(error);
+                return;
+            }
+
+            const drinkStats = document.getElementById('drink-stats');
+            drinkStats.innerHTML = '';
+
+            orders.forEach(stat => {
+                const li = document.createElement('li');
+                li.innerText = `${stat.drink}: ${stat.count}`;
+                drinkStats.appendChild(li);
+            });
+        }
+
+        async function acceptOrder(id) {
+            const { data, error } = await supabase
+                .from('orders')
+                .update({ status: 'inprogress' })
+                .match({ id });
+
+            if (error) {
+                console.error(error);
+                return;
+            }
+
+            alert('Order is in progress');
+
+            // Notify user
+            fetch(`https://your-server-url/notify?orderId=${id}`, { method: 'POST' });
+
+            // Reload orders and stats
+            loadOrders();
+        }
+
+        async function completeOrder(id) {
+            const { data, error } = await supabase
+                .from('orders')
+                .delete()
+                .match({ id });
+
+            if (error) {
+                console.error(error);
+                return;
+            }
+
+            alert('Order completed. Please notify the user to pick up.');
+
+            // Reload orders and stats
+            loadOrders();
+            loadDrinkStats();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadOrders();
+            loadDrinkStats();
+        });
+    </script>
+</body>
+</html>
