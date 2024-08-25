@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drink Order System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+
+        #menu, #order-form, #bartender {
+            margin: 20px;
+        }
+
+        button {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="menu">
+        <h1>Drink Order System</h1>
+        <button id="order-button">Get a Drink</button>
+    </div>
+
+    <div id="order-form" style="display: none;">
+        <h2>Order Form</h2>
+        <form id="drink-form">
+            <label for="drink">Select Drink:</label>
+            <select id="drink" name="drink">
+                <option value="Coke">Coke</option>
+                <option value="Pepsi">Pepsi</option>
+                <option value="Water">Water</option>
+            </select>
+            <button type="submit">Place Order</button>
+        </form>
+        <p id="order-message"></p>
+    </div>
+
+    <div id="bartender" style="display: none;">
+        <h2>Bartender Orders</h2>
+        <ul id="order-list"></ul>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script>
+        // Initialize Supabase
+        const { createClient } = supabase;
+        const supabase = createClient('YOUR_SUPABASE_URL', 'YOUR_SUPABASE_KEY');
+
+        document.getElementById('order-button').addEventListener('click', () => {
+            document.getElementById('menu').style.display = 'none';
+            document.getElementById('order-form').style.display = 'block';
+        });
+
+        document.getElementById('drink-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const drink = document.getElementById('drink').value;
+            const id = Math.floor(1000 + Math.random() * 9000); // Generate a 4-digit ID
+
+            const { data, error } = await supabase
+                .from('orders')
+                .insert([{ id, drink, status: 'pending' }]);
+
+            if (error) {
+                console.error(error);
+                document.getElementById('order-message').innerText = 'Error placing order!';
+                return;
+            }
+
+            localStorage.setItem('orderId', id);
+            document.getElementById('order-message').innerText = `Order placed successfully! Your Order ID is ${id}`;
+            setTimeout(() => {
+                document.getElementById('order-form').style.display = 'none';
+                document.getElementById('menu').style.display = 'block';
+            }, 3000);
+        });
+
+        async function loadOrders() {
+            const { data: orders, error } = await supabase
+                .from('orders')
+                .select('*')
+                .eq('status', 'pending');
+
+            if (error) {
+                console.error(error);
+                return;
+            }
+
+            const orderList = document.getElementById('order-list');
+            orderList.innerHTML = '';
+
+            orders.forEach(order => {
+                const li = document.createElement('li');
+                li.innerText = `Order ID: ${order.id} - Drink: ${order.drink}`;
+                
+                const acceptButton = document.createElement('button');
+                acceptButton.innerText = 'Accept';
+                acceptButton.addEventListener('click', () => acceptOrder(order.id));
+                
+                li.appendChild(acceptButton);
+                orderList.appendChild(li);
+            });
+
+            document.getElementById('menu').style.display = 'none';
+            document.getElementById('order-form').style.display = 'none';
+            document.getElementById('bartender').style.display = 'block';
+        }
+
+        async function acceptOrder(id) {
+            const { data, error } = await supabase
+                .from('orders')
+                .update({ status: 'inprogress' })
+                .match({ id });
+
+            if (error) {
+                console.error(error);
+                return;
+            }
+
+            alert('Order is in progress');
+
+            const userOrderId = localStorage.getItem('orderId');
+            if (userOrderId == id) {
+                alert('Your order is in progress');
+            }
+
+            // Simulate order details and ingredients
+            console.log(`Order ID ${id} is now in progress`);
+
+            // Notify bartender order is completed
+            document.getElementById('order-list').innerHTML = '';
+        }
+
+        document.addEventListener('DOMContentLoaded', loadOrders);
+    </script>
+</body>
+</html>
