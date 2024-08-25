@@ -31,15 +31,17 @@
     <div id="order-details" style="display: none;">
         <h2>Order Details</h2>
         <p id="order-info"></p>
+        <ul id="ingredients-list"></ul>
         <button id="complete-button">Complete Order</button>
     </div>
+
     <audio id="alert-sound" src="225661-ComputerSFX-alerts-071.wav" preload="auto"></audio>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script>
         // Initialize Supabase
    const supabase = window.supabase.createClient('https://utgmmvofnginuwvzajig.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Z21tdm9mbmdpbnV3dnphamlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjE5NTczMzksImV4cCI6MjAzNzUzMzMzOX0.YWH5Ceiz0OI_h8M6wG1M2UsDXM_43i5UdopmYLGO7aE');
-   const alertSound = document.getElementById('alert-sound');
+        const alertSound = document.getElementById('alert-sound');
 
         async function loadOrders() {
             const { data: orders, error } = await supabase
@@ -61,7 +63,7 @@
                 
                 const acceptButton = document.createElement('button');
                 acceptButton.innerText = 'Accept';
-                acceptButton.addEventListener('click', () => acceptOrder(order.id));
+                acceptButton.addEventListener('click', () => showOrderDetails(order));
                 
                 li.appendChild(acceptButton);
                 orderItems.appendChild(li);
@@ -98,8 +100,21 @@
         }
 
         async function showOrderDetails(order) {
+            // Show the order details
             document.getElementById('order-details').style.display = 'block';
             document.getElementById('order-info').innerText = `Order ID: ${order.id} - Drink: ${order.drink}`;
+
+            // Display ingredients list
+            const ingredientsList = document.getElementById('ingredients-list');
+            ingredientsList.innerHTML = ''; // Clear previous list
+            if (order.ingredients) {
+                const ingredients = order.ingredients.split(','); // Assuming ingredients are comma-separated
+                ingredients.forEach(ingredient => {
+                    const li = document.createElement('li');
+                    li.innerText = ingredient.trim();
+                    ingredientsList.appendChild(li);
+                });
+            }
 
             document.getElementById('complete-button').onclick = () => completeOrder(order.id);
         }
@@ -119,7 +134,7 @@
             alertSound.play(); // Play sound for alert
             alert('Order is in progress');
 
-            // Notify user via Vercel serverless function
+            // Notify user via serverless function (ensure correct endpoint)
             await fetch('/api/notify-user', {
                 method: 'POST',
                 headers: {
@@ -147,7 +162,7 @@
             alertSound.play(); // Play sound for alert
             alert('Order completed. Please notify the user to pick up.');
 
-            // Notify user via Vercel serverless function
+            // Notify user via serverless function (ensure correct endpoint)
             await fetch('/api/complete-order', {
                 method: 'POST',
                 headers: {
