@@ -1,5 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="/Design.png"/>
+    <title>User Order System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f7efff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        #menu, #order-form, #drink-details {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+            display: none;
+        }
+        button {
+            background-color: #007BFF;
+            border: none;
+            border-radius: 5px;
+            color: #fff;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 10px 20px;
+            margin-top: 10px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #order-message {
+            margin-top: 15px;
+            font-weight: bold;
+        }
+        .popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 90%;
+            max-width: 400px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            z-index: 1000;
+            text-align: center;
+            overflow: auto;
+        }
+        .popup.show {
+            display: block;
+        }
+        .popup .title {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .popup .message {
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+        .popup .checkmark {
+            font-size: 80px;
+            color: #28a745;
+            margin-bottom: 20px;
+        }
+        .popup button {
+            background-color: #dc3545;
+            border: none;
+            border-radius: 5px;
+            color: #fff;
+            cursor: pointer;
+            padding: 10px;
+            font-size: 16px;
+        }
+        .popup button:hover {
+            background-color: #c82333;
+        }
+        /* New welcome popup styles */
+        #welcome-popup {
+            display: block; /* Display on page load */
+            position: fixed;
+            top: 30%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 400px;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            z-index: 1000;
+            text-align: center;
+        }
+        #welcome-popup button {
+            background-color: #28a745;
+            border: none;
+            border-radius: 5px;
+            color: #fff;
+            cursor: pointer;
+            padding: 10px;
+            font-size: 16px;
+        }
+        #welcome-popup button:hover {
+            background-color: #218838;
+        }
+        /* Drink cards styling */
+        #drink-cards {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+        }
+        .drink-card {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 15px;
+            width: 100%;
+            max-width: 180px;
+            text-align: center;
+        }
+        .drink-card h3 {
+            margin: 0;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        .drink-card p {
+            font-size: 14px;
+            color: #666;
+        }
+        .drink-card button {
+            background-color: #007BFF;
+            margin-top: 10px;
+            width: 100%;
+        }
+        .drink-card button:hover {
+            background-color: #0056b3;
+        }
+        @media (max-width: 600px) {
+            #menu, #order-form, #drink-details {
+                width: 90%;
+            }
+            .popup {
+                width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Welcome Popup -->
+    <div id="welcome-popup">
+        <h1>Welcome!</h1>
+        <p>We're glad to have you here at Steve and Stacy's Year End Party. Click the button below to explore our drink selection.</p>
+        <button id="explore-button">Explore Drink Selection</button>
+    </div>
+
+    <div id="menu">
+        <h1>Drink Menu</h1>
+        <div id="drink-cards"></div>
+    </div>
+
+    <div id="drink-details">
+        <h2 id="drink-name"></h2>
+        <p id="drink-description"></p>
+        <p id="drink-ingredients"></p>
+        <button id="order-drink-button">Order this Drink</button>
+        <button id="back-to-menu-button">Back to Menu</button>
+    </div>
+
+    <div id="order-form">
+        <h2>Order Form</h2>
+        <form id="drink-form">
+            <label for="drink">Select Drink:</label>
+            <select id="drink" name="drink"></select>
+            <button type="submit">Place Order</button>
+        </form>
+        <p id="order-message"></p>
+        <button id="close-form-button">Close</button>
+    </div>
+
+    <!-- Popup notifications -->
+    <div id="success-popup" class="popup">
+        <div class="checkmark">&#10003;</div>
+        <div class="title">Order Placed Successfully</div>
+        <div class="message">Your Order ID is <span id="order-id"></span>. You will get notifications when your drink is in progress and when it is ready!</div>
+        <button onclick="closePopup('success-popup')">Close</button>
+    </div>
+    <div id="inprogress-popup" class="popup">
+        <div class="title">Order Update</div>
+        <div class="message">Your order is now in progress.</div>
+        <button onclick="closePopup('inprogress-popup')">Close</button>
+    </div>
+    <div id="completed-popup" class="popup">
+        <div class="title">Order Update</div>
+        <div class="message">Your order is ready for pickup.</div>
+        <button onclick="closePopup('completed-popup')">Close</button>
+    </div>
+
+    <audio id="sound" src="225661-ComputerSFX-alerts-071.wav" preload="auto"></audio>
+    <audio id="welcome" src="advertising-logo-199582.mp3" preload="auto"></audio>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script>
-    // Initialize Supabase
+   // Initialize Supabase
     const supabase = window.supabase.createClient('https://utgmmvofnginuwvzajig.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Z21tdm9mbmdpbnV3dnphamlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjE5NTczMzksImV4cCI6MjAzNzUzMzMzOX0.YWH5Ceiz0OI_h8M6wG1M2UsDXM_43i5UdopmYLGO7aE');
     const sound = document.getElementById('sound');
     const welcome = document.getElementById('welcome');
@@ -226,3 +443,5 @@
     // Check order status every 10 seconds
     setInterval(checkOrderStatus, 10000);
 </script>
+</body>
+</html>
