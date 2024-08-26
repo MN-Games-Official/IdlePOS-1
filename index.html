@@ -393,20 +393,11 @@ function closePopup(popupId) {
                             playSound(); // Play sound for in progress
                             showPopup('inprogress-popup');
                         }
-                    } else if (order.status === 'completed') {
-                        if (!localStorage.getItem('completeNotify')) {
-                            localStorage.setItem('completeNotify', 'true');
-                            playSound(); // Play sound for completed
-                            showPopup('completed-popup');
-                            // Reset notification flags
-                            resetNotificationFlags();
-                            removeOrderFromLocalStorage(userOrderId);
-                        }
+                    }
                     }
                 }
             }
         }
-    }
 
     function removeOrderFromLocalStorage(orderId) {
         let orderIds = JSON.parse(localStorage.getItem('orderIds')) || [];
