@@ -361,7 +361,7 @@ function closePopup(popupId) {
         }
     }
 }
-const waitTime = 0;
+let waitTime = 0;
 const waitTimeDisplay = document.getElementById('wait-time');
 setInterval(async () => {
     // Query the orders table to get the count of entries
