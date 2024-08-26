@@ -368,7 +368,7 @@ function closePopup(popupId) {
 
                 if (error) {
                     if (error.code === 'PGRST116') {
-                        document.title = "Your order is complete"
+                        document.title = "(CLICK HERE) Order complete"
                         // Treat PGRST116 error as a completed order
                         if (!localStorage.getItem('completeNotify')) {
                             localStorage.setItem('completeNotify', 'true');
@@ -387,7 +387,7 @@ function closePopup(popupId) {
 
                 if (order) {
                     if (order.status === 'inprogress') {
-                        document.title = "Order in progress"
+                        document.title = "(CLICK HERE) Order in progress"
                         if (!localStorage.getItem('inprogressNotify')) {
                             localStorage.setItem('inprogressNotify', 'true');
                             playSound(); // Play sound for in progress
