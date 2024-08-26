@@ -311,6 +311,7 @@
         const drink = document.getElementById('drink').value;
         const id = Math.floor(1000 + Math.random() * 9000); // Generate a 4-digit ID
         welcome.play();
+        document.title = "Order placed successfully"
         const { data, error } = await supabase
             .from('orders')
             .insert([{ id, drink, status: 'pending' }]);
