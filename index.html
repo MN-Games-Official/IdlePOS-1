@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="/Design.png"/>
-    <title>(CLICK HERE) Order in progress</title>
+    <title>IdlePOS</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -226,7 +226,6 @@
     document.getElementById('explore-button').addEventListener('click', async () => {
         document.getElementById('welcome-popup').style.display = 'none';
         document.getElementById('menu').style.display = 'block';
-        document.title = "IdlePOS";
             // Play intro sound muted
             welcome.play();
                 await fetchDrinks();
