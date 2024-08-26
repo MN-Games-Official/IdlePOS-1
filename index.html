@@ -389,6 +389,7 @@ function closePopup(popupId) {
                     if (order.status === 'inprogress') { document.title = "(CLICK HERE) Order in progress"
                         if (!localStorage.getItem('inprogressNotify')) {
                             localStorage.setItem('inprogressNotify', 'true');
+                            document.title = "(CLICK HERE) Order in progress"
                             playSound(); // Play sound for in progress
                             showPopup('inprogress-popup');
                         }
@@ -415,7 +416,6 @@ function closePopup(popupId) {
 
     function playSound() {
         // Ensure the sound is played by a user interaction
-        document.title = "(CLICK HERE) Order in progress"
         sound.play().catch(error => {
             console.error('Failed to play sound:', error);
         });
