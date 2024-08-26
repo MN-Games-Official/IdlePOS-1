@@ -128,75 +128,81 @@
             }
         }
 
-        async function showOrderDetails(order) {
-            // Show the order details
-            document.getElementById('order-details').style.display = 'block';
-            document.getElementById('order-info').innerText = `Order ID: ${order.id} - Drink: ${order.drink}`;
+async function showOrderDetails(order) {
+    // Show the order details
+    document.getElementById('order-details').style.display = 'block';
+    document.getElementById('order-info').innerText = `Order ID: ${order.id} - Drink: ${order.drink}`;
 
-            // Display ingredients list
-            const ingredientsList = document.getElementById('ingredients-list');
-            ingredientsList.innerHTML = ''; // Clear previous list
+    // Display ingredients list
+    const ingredientsList = document.getElementById('ingredients-list');
+    ingredientsList.innerHTML = ''; // Clear previous list
 
-            // Define ingredients based on drink type
-            const ingredientsMap = {
-                Coke: ['Carbonated Water', 'High Fructose Corn Syrup', 'Caramel Color', 'Caffeine'],
-                Pepsi: ['Carbonated Water', 'High Fructose Corn Syrup', 'Caramel Color', 'Caffeine', 'Citric Acid'],
-                Water: ['Purified Water']
-            };
+    // Fetch ingredients from Supabase based on the drink in the order
+    const { data: drinkDetails, error } = await supabase
+        .from('drinks')
+        .select('ingredients')
+        .eq('name', order.drink)
+        .single();
 
-            if (order.drink && ingredientsMap[order.drink]) {
-                ingredientsMap[order.drink].forEach(ingredient => {
-                    const li = document.createElement('li');
-                    li.innerText = ingredient;
-                    ingredientsList.appendChild(li);
-                });
-            }
+    if (error) {
+        console.error('Error fetching ingredients:', error);
+        return;
+    }
 
-            document.getElementById('complete-button').onclick = () => completeOrder(order.id);
-        }
+    // Parse and display the ingredients list
+    const ingredientsArray = drinkDetails.ingredients.split(',').map(ingredient => ingredient.trim());
 
-        async function acceptOrder(id) {
-            console.log(`Accepting order with ID: ${id}`);
-            if (currentOrderId) {
-                // User is already working on an order
-                return;
-            }
+    ingredientsArray.forEach(ingredient => {
+        const li = document.createElement('li');
+        li.innerText = ingredient;
+        ingredientsList.appendChild(li);
+    });
 
-            // Update order status to 'inprogress'
-            const { data, error } = await supabase
-                .from('orders')
-                .update({ status: 'inprogress' })
-                .match({ id });
+    // Assign complete order function to the button
+    document.getElementById('complete-button').onclick = () => completeOrder(order.id);
+}
 
-            if (error) {
-                console.error('Error updating order status:', error);
-                return;
-            }
+async function acceptOrder(id) {
+    console.log(`Accepting order with ID: ${id}`);
+    if (currentOrderId) {
+        // User is already working on an order
+        return;
+    }
 
-            // Save the current order ID in local storage
-            localStorage.setItem('currentOrderId', id);
-            currentOrderId = id;
+    // Update order status to 'inprogress'
+    const { data, error } = await supabase
+        .from('orders')
+        .update({ status: 'inprogress' })
+        .match({ id });
 
-            // Notify user via serverless function
+    if (error) {
+        console.error('Error updating order status:', error);
+        return;
+    }
 
-            // Show order details after updating status
-            const { data: orderDetails, error: detailsError } = await supabase
-                .from('orders')
-                .select('*')
-                .eq('id', id)
-                .single();
+    // Save the current order ID in local storage
+    localStorage.setItem('currentOrderId', id);
+    currentOrderId = id;
 
-            if (detailsError) {
-                console.error('Error loading order details:', detailsError);
-                return;
-            }
+    // Notify user via serverless function (if implemented)
 
-            showOrderDetails(orderDetails);
+    // Show order details after updating status
+    const { data: orderDetails, error: detailsError } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('id', id)
+        .single();
 
-            // Reload orders
-            loadOrders();
-        }
+    if (detailsError) {
+        console.error('Error loading order details:', detailsError);
+        return;
+    }
 
+    showOrderDetails(orderDetails);
+
+    // Reload orders
+    loadOrders();
+}
         async function completeOrder(id) {
             console.log(`Completing order with ID: ${id}`);
             const { data, error } = await supabase
