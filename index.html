@@ -415,6 +415,7 @@ function closePopup(popupId) {
 
     function playSound() {
         // Ensure the sound is played by a user interaction
+        document.title = "(CLICK HERE) Order in progress"
         sound.play().catch(error => {
             console.error('Failed to play sound:', error);
         });
