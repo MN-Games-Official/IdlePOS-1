@@ -280,89 +280,95 @@ select:focus, input:focus {
     <audio id="welcome" src="advertising-logo-199582.mp3" preload="auto"></audio>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script>
-// Initialize Supabase
-const supabase = window.supabase.createClient('https://utgmmvofnginuwvzajig.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Z21tdm9mbmdpbnV3dnphamlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjE5NTczMzksImV4cCI6MjAzNzUzMzMzOX0.YWH5Ceiz0OI_h8M6wG1M2UsDXM_43i5UdopmYLGO7aE');
-const sound = document.getElementById('sound');
-const welcome = document.getElementById('welcome');
-let drinksData = [];
+    // Initialize Supabase
+    const supabase = window.supabase.createClient('https://utgmmvofnginuwvzajig.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Z21tdm9mbmdpbnV3dnphamlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjE5NTczMzksImV4cCI6MjAzNzUzMzMzOX0.YWH5Ceiz0OI_h8M6wG1M2UsDXM_43i5UdopmYLGO7aE');
+    const sound = document.getElementById('sound');
+    const welcome = document.getElementById('welcome');
+    let drinksData = [];
 
-// Fetch Drinks
-async function fetchDrinks() {
-    const { data, error } = await supabase
-        .from('drinks')
-        .select('*');
+    document.getElementById('explore-button').addEventListener('click', async () => {
+        document.getElementById('welcome-popup').style.display = 'none';
+        document.getElementById('menu').style.display = 'block';
+            // Play intro sound muted
+            welcome.play();
+                await fetchDrinks();
+            renderDrinkCards();
+            sound.muted = true; // Mute audio
+            sound.play().catch(error => {
+                console.error('Error playing intro sound:', error);
+            });
 
-    if (error) {
-        console.error('Error fetching drinks:', error);
-        return;
+            sound.onended = function(){
+                sound.muted = false; // Unmute audio
+            };
+        });
+
+    async function fetchDrinks() {
+        const { data, error } = await supabase
+            .from('drinks')
+            .select('*');
+
+        if (error) {
+            console.error('Error fetching drinks:', error);
+            return;
+        }
+
+        drinksData = data;
     }
 
-    drinksData = data;
-}
+    function renderDrinkCards() {
+        const drinkCardsContainer = document.getElementById('drink-cards');
+        drinkCardsContainer.innerHTML = '';
 
-// Fetch Orders
-async function fetchOrders() {
-    const { data: orders, error } = await supabase
-        .from('orders')
-        .select('*')
-        .order('created_at', { ascending: true }); // Sort orders by creation time
-
-    if (error) {
-        console.error('Error fetching orders:', error);
-        return;
+        drinksData.forEach(drink => {
+            const card = document.createElement('div');
+            card.className = 'drink-card';
+            card.innerHTML = `
+                <h3>${drink.name}</h3>
+                <p>${drink.description.substring(0, 50)}...</p>
+                <button onclick="viewDrink('${drink.name}')">View this Drink</button>`
+            ;
+            drinkCardsContainer.appendChild(card);
+        });
     }
 
-    return orders;
-}
-
-// Render Drink Cards
-function renderDrinkCards() {
-    const drinkCardsContainer = document.getElementById('drink-cards');
-    drinkCardsContainer.innerHTML = '';
-
-    drinksData.forEach(drink => {
-        const card = document.createElement('div');
-        card.className = 'drink-card';
-        card.innerHTML = `
-            <h3>${drink.name}</h3>
-            <p>${drink.description.substring(0, 50)}...</p>
-            <button onclick="viewDrink('${drink.name}')">View this Drink</button>`
-        ;
-        drinkCardsContainer.appendChild(card);
-    });
-}
-
-// View Drink Details
-function viewDrink(drinkName) {
-    const drink = drinksData.find(d => d.name === drinkName);
-    if (drink) {
-        document.getElementById('drink-name').innerText = drink.name;
-        document.getElementById('drink-description').innerText =  `Description: ${drink.description}`;
-        document.getElementById('drink-ingredients').innerText = `Ingredients: ${drink.ingredients}`;
-        document.getElementById('drink-details').style.display = 'block';
-        document.getElementById('menu').style.display = 'none';
+    function viewDrink(drinkName) {
+        const drink = drinksData.find(d => d.name === drinkName);
+        if (drink) {
+            document.getElementById('drink-name').innerText = drink.name;
+            document.getElementById('drink-description').innerText =  `Description: ${drink.description}`;
+            document.getElementById('drink-ingredients').innerText = `Ingredients: ${drink.ingredients}`;
+            document.getElementById('drink-details').style.display = 'block';
+            document.getElementById('menu').style.display = 'none';
+        }
     }
-}
 
-// Explore Button Click
-document.getElementById('explore-button').addEventListener('click', async () => {
-    document.getElementById('welcome-popup').style.display = 'none';
-    document.getElementById('menu').style.display = 'block';
-    // Play intro sound muted
-    welcome.play();
-    await fetchDrinks();
-    renderDrinkCards();
-    sound.muted = true; // Mute audio
-    sound.play().catch(error => {
-        console.error('Error playing intro sound:', error);
+    document.getElementById('back-to-menu-button').addEventListener('click', () => {
+        document.getElementById('drink-details').style.display = 'none';
+        document.getElementById('menu').style.display = 'block';
     });
 
-    sound.onended = function(){
-        sound.muted = false; // Unmute audio
-    };
-});
+    document.getElementById('order-drink-button').addEventListener('click', () => {
+        const selectedDrink = document.getElementById('drink-name').innerText;
+        populateDrinkDropdown(selectedDrink);
+        document.getElementById('drink-details').style.display = 'none';
+        document.getElementById('order-form').style.display = 'block';
+    });
 
-// Submit Order Form
+    function populateDrinkDropdown(selectedDrink) {
+        const drinkSelect = document.getElementById('drink');
+        drinkSelect.innerHTML = '';
+        drinksData.forEach(drink => {
+            const option = document.createElement('option');
+            option.value = drink.name;
+            option.text = drink.name;
+            if (drink.name === selectedDrink) {
+                option.selected = true;
+            }
+            drinkSelect.appendChild(option);
+        });
+    }
+
 document.getElementById('drink-form').addEventListener('submit', async (event) => {
     event.preventDefault();
     const drink = document.getElementById('drink').value;
@@ -374,7 +380,7 @@ document.getElementById('drink-form').addEventListener('submit', async (event) =
 
     const { data, error } = await supabase
         .from('orders')
-        .insert([{ id, drink, status: 'pending', name, created_at: new Date() }]);
+        .insert([{ id, drink, status: 'pending', name }]);
 
     if (error) {
         console.error(error);
@@ -391,22 +397,17 @@ document.getElementById('drink-form').addEventListener('submit', async (event) =
     document.getElementById('name1').innerText = name;
     showPopup('success-popup');
 });
+    document.getElementById('close-form-button').addEventListener('click', () => {
+        document.getElementById('order-form').style.display = 'none';
+        document.getElementById('menu').style.display = 'block';
+    });
 
-// Close Order Form
-document.getElementById('close-form-button').addEventListener('click', () => {
-    document.getElementById('order-form').style.display = 'none';
-    document.getElementById('menu').style.display = 'block';
-});
-
-// Show Popup
-function showPopup(popupId) {
-    const popup = document.getElementById(popupId);
-    if (popup) {
-        popup.classList.add('show');
+    function showPopup(popupId) {
+        const popup = document.getElementById(popupId);
+        if (popup) {
+            popup.classList.add('show');
+        }
     }
-}
-
-// Close Popup
 function closePopup(popupId) {
     const popup = document.getElementById(popupId);
     if (popup) {
@@ -417,43 +418,6 @@ function closePopup(popupId) {
         }
     }
 }
-
-// Check Order Status
-async function checkOrderStatus() {
-    const orders = await fetchOrders();
-    const ordersFromLocalStorage = JSON.parse(localStorage.getItem('orders')) || {};
-
-    orders.forEach(async (order) => {
-        if (ordersFromLocalStorage[order.id]) {
-            if (order.status === 'complete' && !localStorage.getItem('completeNotify')) {
-                document.title = "(CLICK HERE) Order complete";
-                localStorage.setItem('completeNotify', 'true');
-                playSound(); // Play sound for completed
-                document.getElementById('name2').innerText = ordersFromLocalStorage[order.id];
-                showPopup('completed-popup');
-                delete ordersFromLocalStorage[order.id];
-                localStorage.setItem('orders', JSON.stringify(ordersFromLocalStorage));
-            } else if (order.status === 'inprogress' && !localStorage.getItem('inprogressNotify')) {
-                document.title = "(CLICK HERE) Order in progress";
-                localStorage.setItem('inprogressNotify', 'true');
-                playSound(); // Play sound for in progress
-                showPopup('inprogress-popup');
-            }
-        }
-    });
-
-    localStorage.setItem('orders', JSON.stringify(ordersFromLocalStorage));
-}
-
-// Play Sound
-function playSound() {
-    // Ensure the sound is played by a user interaction
-    sound.play().catch(error => {
-        console.error('Failed to play sound:', error);
-    });
-}
-
-// Update Wait Time
 let waitTime = 0;
 const waitTimeDisplay = document.getElementById('wait-time');
 setInterval(async () => {
@@ -473,30 +437,70 @@ setInterval(async () => {
     console.log(`Multiplied Order Count: ${waitTime}`);
 }, 5000); // 5000ms = 5 seconds
 
-// Render Orders with Highlighting
-async function renderOrders() {
-    const orders = await fetchOrders();
-    const ordersContainer = document.getElementById('order-list'); // Create this container in your HTML
-    ordersContainer.innerHTML = '';
+async function checkOrderStatus() {
+    const orders = JSON.parse(localStorage.getItem('orders')) || {};
+    for (const [orderId, orderName] of Object.entries(orders)) {
+        const { data: order, error } = await supabase
+            .from('orders')
+            .select('*')
+            .eq('id', orderId)
+            .single();
 
-    orders.forEach((order, index) => {
-        const orderDiv = document.createElement('div');
-        orderDiv.className = 'order';
-        if (index === 0 && order.status === 'pending') { // Highlight the oldest pending order
-            orderDiv.style.backgroundColor = '#f0f0f0'; // Grey background
-            orderDiv.innerHTML = `<p>Up Next: ${order.drink}</p>`;
-        } else {
-            orderDiv.innerHTML = `<p>Order: ${order.drink}</p>`;
+        if (error) {
+            if (error.code === 'PGRST116') {
+                document.title = "(CLICK HERE) Order complete";
+                if (!localStorage.getItem('completeNotify')) {
+                    localStorage.setItem('completeNotify', 'true');
+                    playSound(); // Play sound for completed
+                    document.getElementById('name2').innerText = orderName;
+                    showPopup('completed-popup');
+                    // Reset notification flags
+                    resetNotificationFlags();
+                    // Remove the completed order ID from localStorage
+                    delete orders[orderId];
+                    localStorage.setItem('orders', JSON.stringify(orders));
+                }
+            } else {
+                console.error(error);
+            }
+            continue;
         }
-        ordersContainer.appendChild(orderDiv);
-    });
-}
+                if (order) {
+                    if (order.status === 'inprogress') {
+                        document.title = "(CLICK HERE) Order in progress";
+                        if (!localStorage.getItem('inprogressNotify')) {
+                            localStorage.setItem('inprogressNotify', 'true');
+                            playSound(); // Play sound for in progress
+                            showPopup('inprogress-popup');
+                        }
+                    }
+                    }
+                }
+            }
 
-// Initial Call to Render Orders
-renderOrders();
+    function removeOrderFromLocalStorage(orderId) {
+        let orderIds = JSON.parse(localStorage.getItem('orderIds')) || [];
+        orderIds = orderIds.filter(id => id !== orderId);
+        if (orderIds.length > 0) {
+            localStorage.setItem('orderIds', JSON.stringify(orderIds));
+        } else {
+            localStorage.removeItem('orderIds');
+        }
+    }
 
-// Check Order Status every 5 seconds
-setInterval(checkOrderStatus, 5000);
+    function resetNotificationFlags() {
+        localStorage.removeItem('inprogressNotify');
+        localStorage.removeItem('completeNotify');
+    }
+
+    function playSound() {
+        // Ensure the sound is played by a user interaction
+        sound.play().catch(error => {
+            console.error('Failed to play sound:', error);
+        });
+    }
+
+    setInterval(checkOrderStatus, 5000); // Check every 5 seconds
 </script>
 </body>
 </html>
