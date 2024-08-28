@@ -231,7 +231,6 @@
     const supabase = window.supabase.createClient('https://utgmmvofnginuwvzajig.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Z21tdm9mbmdpbnV3dnphamlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjE5NTczMzksImV4cCI6MjAzNzUzMzMzOX0.YWH5Ceiz0OI_h8M6wG1M2UsDXM_43i5UdopmYLGO7aE');
     const sound = document.getElementById('sound');
     const welcome = document.getElementById('welcome');
-    const name = document.getElementById('name').value
     let drinksData = [];
 
     document.getElementById('explore-button').addEventListener('click', async () => {
@@ -321,6 +320,7 @@
         event.preventDefault();
         const drink = document.getElementById('drink').value;
         const id = Math.floor(1000 + Math.random() * 9000); // Generate a 4-digit ID
+        const name = document.getElementById('name').value
         welcome.play();
         document.title = "Order placed successfully"
         const { data, error } = await supabase
@@ -341,6 +341,7 @@
         localStorage.setItem('pendingNotify', 'true'); // Set pendingNotify to true
         document.getElementById('order-id').innerText = id;
         document.getElementById('name1').innerText = name;
+        localStorage.setItem('name', name);
         showPopup('success-popup');
     });
 
@@ -397,6 +398,7 @@ setInterval(async () => {
 
                 if (error) {
                     if (error.code === 'PGRST116') {
+                        let name = localStorage.getItem('name')
                         document.title = "(CLICK HERE) Order complete";
                         // Treat PGRST116 error as a completed order
                         if (!localStorage.getItem('completeNotify')) {
