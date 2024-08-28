@@ -194,6 +194,8 @@
         <h3>Estimated wait time: <span id="wait-time"></span> minutes.</h3>
         <p>This is just an estimate. Some drinks may take longer.</p>
         <form id="drink-form">
+            <label for="name">Name for order:</label>
+            <input type="text" id="name" placeholder="Your name here" required>
             <label for="drink">Select Drink:</label>
             <select id="drink" name="drink"></select>
             <button type="submit">Place Order</button>
@@ -206,7 +208,7 @@
     <div id="success-popup" class="popup">
         <div class="checkmark">&#10003;</div>
         <div class="title">Order Placed Successfully</div>
-        <div class="message">Your Order ID is <span id="order-id"></span>. You will get notifications when your drink is in progress and when it is ready!</div>
+        <div class="message">Your Order ID is <span id="order-id"></span>. The name on the order is <span id="name1"></span>. You will get notifications when your drink is in progress and when it is ready!</div>
         <div class="subtitle">Please keep the app open!</div>
         <button onclick="closePopup('success-popup')">Close</button>
     </div>
@@ -217,7 +219,7 @@
     </div>
     <div id="completed-popup" class="popup">
         <div class="title">Order Update</div>
-        <div class="message">Your order is ready for pickup.</div>
+        <div class="message">Your order is ready for pickup. You can pick up your order under the name <span id="name2"></span></div>
         <button onclick="closePopup('completed-popup')">Close</button>
     </div>
 
@@ -229,7 +231,7 @@
     const supabase = window.supabase.createClient('https://utgmmvofnginuwvzajig.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Z21tdm9mbmdpbnV3dnphamlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjE5NTczMzksImV4cCI6MjAzNzUzMzMzOX0.YWH5Ceiz0OI_h8M6wG1M2UsDXM_43i5UdopmYLGO7aE');
     const sound = document.getElementById('sound');
     const welcome = document.getElementById('welcome');
-
+    const name = document.getElementById('name').value
     let drinksData = [];
 
     document.getElementById('explore-button').addEventListener('click', async () => {
@@ -323,7 +325,7 @@
         document.title = "Order placed successfully"
         const { data, error } = await supabase
             .from('orders')
-            .insert([{ id, drink, status: 'pending' }]);
+            .insert([{ id, drink, status: 'pending', name }]);
 
         if (error) {
             console.error(error);
@@ -338,6 +340,7 @@
         localStorage.setItem('orderIds', JSON.stringify(orderIds));
         localStorage.setItem('pendingNotify', 'true'); // Set pendingNotify to true
         document.getElementById('order-id').innerText = id;
+        document.getElementById('name1').innerText = name;
         showPopup('success-popup');
     });
 
@@ -399,6 +402,7 @@ setInterval(async () => {
                         if (!localStorage.getItem('completeNotify')) {
                             localStorage.setItem('completeNotify', 'true');
                             playSound(); // Play sound for completed
+                            document.getElementById('name2').innerText = name;
                             showPopup('completed-popup');
                             // Reset notification flags
                             resetNotificationFlags();
