@@ -31,6 +31,10 @@
             justify-content: space-between;
             align-items: center;
         }
+        #ingredients-list {
+            list-style-type: disc;
+            padding-left: 20px;
+        }
         .timer {
             font-size: 14px;
             color: #666;
@@ -97,7 +101,12 @@
             timers[orderId] = setInterval(() => {
                 const currentTime = Date.now();
                 const elapsedSeconds = Math.floor((currentTime - startTime) / 1000);
-                document.getElementById(`timer-${orderId}`).innerText = formatTime(elapsedSeconds);
+                const timerElement = document.getElementById(`timer-${orderId}`);
+                if (timerElement) {
+                    timerElement.innerText = formatTime(elapsedSeconds);
+                } else {
+                    clearInterval(timers[orderId]);
+                }
             }, 1000);
         }
 
