@@ -476,7 +476,7 @@ setInterval(async () => {
 // Render Orders with Highlighting
 async function renderOrders() {
     const orders = await fetchOrders();
-    const ordersContainer = document.getElementById('orders-container'); // Create this container in your HTML
+    const ordersContainer = document.getElementById('order-list'); // Create this container in your HTML
     ordersContainer.innerHTML = '';
 
     orders.forEach((order, index) => {
@@ -484,7 +484,7 @@ async function renderOrders() {
         orderDiv.className = 'order';
         if (index === 0 && order.status === 'pending') { // Highlight the oldest pending order
             orderDiv.style.backgroundColor = '#f0f0f0'; // Grey background
-            orderDiv.innerHTML = `<p>Oldest Order: ${order.drink}</p>`;
+            orderDiv.innerHTML = `<p>Up Next: ${order.drink}</p>`;
         } else {
             orderDiv.innerHTML = `<p>Order: ${order.drink}</p>`;
         }
