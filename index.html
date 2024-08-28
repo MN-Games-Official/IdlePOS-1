@@ -27,6 +27,59 @@
             text-align: center;
             display: none;
         }
+        #order-form {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    text-align: center;
+}
+
+#order-form label {
+    display: block;
+    margin: 10px 0 5px;
+    font-weight: bold;
+}
+
+#order-form input, #order-form select {
+    width: calc(100% - 20px);
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    margin-bottom: 10px;
+}
+
+#order-form button {
+    background-color: #007BFF;
+    border: none;
+    border-radius: 5px;
+    color: #fff;
+    cursor: pointer;
+    padding: 10px;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+#order-form button:hover {
+    background-color: #0056b3;
+}
+
+#order-message {
+    margin-top: 10px;
+    font-weight: bold;
+    color: #dc3545;
+}
+
+/* Additional styling for improved form appearance */
+input::placeholder {
+    color: #888;
+}
+
+select:focus, input:focus {
+    border-color: #007BFF;
+    outline: none;
+    box-shadow: 0 0 3px rgba(0, 123, 255, 0.5);
+}
         button {
             background-color: #007BFF;
             border: none;
@@ -316,35 +369,34 @@
         });
     }
 
-    document.getElementById('drink-form').addEventListener('submit', async (event) => {
-        event.preventDefault();
-        const drink = document.getElementById('drink').value;
-        const id = Math.floor(1000 + Math.random() * 9000); // Generate a 4-digit ID
-        const name = document.getElementById('name').value
-        welcome.play();
-        document.title = "Order placed successfully"
-        const { data, error } = await supabase
-            .from('orders')
-            .insert([{ id, drink, status: 'pending', name }]);
+document.getElementById('drink-form').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const drink = document.getElementById('drink').value;
+    const id = Math.floor(1000 + Math.random() * 9000); // Generate a 4-digit ID
+    const name = document.getElementById('name').value;
 
-        if (error) {
-            console.error(error);
-            document.getElementById('order-message').innerText = 'Error placing order!';
-            return;
-        }
+    welcome.play();
+    document.title = "Order placed successfully";
 
-        // Retrieve existing orders from localStorage
-        let orderIds = JSON.parse(localStorage.getItem('orderIds')) || [];
-        // Add the new order ID to the list
-        orderIds.push(id);
-        localStorage.setItem('orderIds', JSON.stringify(orderIds));
-        localStorage.setItem('pendingNotify', 'true'); // Set pendingNotify to true
-        document.getElementById('order-id').innerText = id;
-        document.getElementById('name1').innerText = name;
-        localStorage.setItem('name', name);
-        showPopup('success-popup');
-    });
+    const { data, error } = await supabase
+        .from('orders')
+        .insert([{ id, drink, status: 'pending', name }]);
 
+    if (error) {
+        console.error(error);
+        document.getElementById('order-message').innerText = 'Error placing order!';
+        return;
+    }
+
+    // Store name under each order_id in localStorage
+    const orders = JSON.parse(localStorage.getItem('orders')) || {};
+    orders[id] = name;
+    localStorage.setItem('orders', JSON.stringify(orders));
+
+    document.getElementById('order-id').innerText = id;
+    document.getElementById('name1').innerText = name;
+    showPopup('success-popup');
+});
     document.getElementById('close-form-button').addEventListener('click', () => {
         document.getElementById('order-form').style.display = 'none';
         document.getElementById('menu').style.display = 'block';
@@ -385,38 +437,34 @@ setInterval(async () => {
     console.log(`Multiplied Order Count: ${waitTime}`);
 }, 5000); // 5000ms = 5 seconds
 
-    // Poll for order status
-    async function checkOrderStatus() {
-        const orderIds = JSON.parse(localStorage.getItem('orderIds')) || [];
-        if (orderIds.length > 0) {
-            for (const userOrderId of orderIds) {
-                const { data: order, error } = await supabase
-                    .from('orders')
-                    .select('*')
-                    .eq('id', userOrderId)
-                    .single();
+async function checkOrderStatus() {
+    const orders = JSON.parse(localStorage.getItem('orders')) || {};
+    for (const [orderId, orderName] of Object.entries(orders)) {
+        const { data: order, error } = await supabase
+            .from('orders')
+            .select('*')
+            .eq('id', orderId)
+            .single();
 
-                if (error) {
-                    if (error.code === 'PGRST116') {
-                        let name = localStorage.getItem('name')
-                        document.title = "(CLICK HERE) Order complete";
-                        // Treat PGRST116 error as a completed order
-                        if (!localStorage.getItem('completeNotify')) {
-                            localStorage.setItem('completeNotify', 'true');
-                            playSound(); // Play sound for completed
-                            document.getElementById('name2').innerText = name;
-                            showPopup('completed-popup');
-                            // Reset notification flags
-                            resetNotificationFlags();
-                            // Remove the completed order ID
-                            removeOrderFromLocalStorage(userOrderId);
-                        }
-                    } else {
-                        console.error(error);
-                    }
-                    continue;
+        if (error) {
+            if (error.code === 'PGRST116') {
+                document.title = "(CLICK HERE) Order complete";
+                if (!localStorage.getItem('completeNotify')) {
+                    localStorage.setItem('completeNotify', 'true');
+                    playSound(); // Play sound for completed
+                    document.getElementById('name2').innerText = orderName;
+                    showPopup('completed-popup');
+                    // Reset notification flags
+                    resetNotificationFlags();
+                    // Remove the completed order ID from localStorage
+                    delete orders[orderId];
+                    localStorage.setItem('orders', JSON.stringify(orders));
                 }
-
+            } else {
+                console.error(error);
+            }
+            continue;
+        }
                 if (order) {
                     if (order.status === 'inprogress') {
                         document.title = "(CLICK HERE) Order in progress";
