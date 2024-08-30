@@ -279,11 +279,6 @@ select:focus, input:focus {
     <div class="message">Your order of <span id="completed-drink"></span> is ready for pickup. You can pick up your order under the name <span id="name2"></span></div>
     <button onclick="closePopup('completed-popup')">Close</button>
 </div>
-
-    <!-- Estimated Wait Time Display -->
-    <div id="wait-time-display">
-        <p>Estimated Wait Time: <span id="wait-time">0</span> minutes</p>
-    </div>
     <audio id="sound" src="225661-ComputerSFX-alerts-071.wav" preload="auto"></audio>
     <audio id="welcome" src="advertising-logo-199582.mp3" preload="auto"></audio>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
@@ -462,6 +457,7 @@ select:focus, input:focus {
                     if (!localStorage.getItem('completeNotify')) {
                         localStorage.setItem('completeNotify', 'true');
                         playSound(); // Play sound for completed
+                        document.getElementById('completed-drink').innerText = drink;
                         document.getElementById('name2').innerText = name;
                         showPopup('completed-popup');
                         // Reset notification flags
