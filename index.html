@@ -218,156 +218,168 @@ select:focus, input:focus {
     </style>
 </head>
 <body>
+<body>
     <!-- Welcome Popup -->
-    <div id="welcome-popup">
-        <h1>Welcome!</h1>
-        <p>Welcome to Steve and Stacie's fall party on beautiful Weaver Lake. We're so glad you could join us again this year!</p>
-        <p>Please enjoy the live music of Vinnie Rose, and click below to order from the cocktail menu. (Beer and seltzers available at the bar/coolers.)</p>
-        <button id="explore-button">Click to Explore/Order Adult Beverages</button>
+    <div id="welcome-popup" class="popup">
+        <h1>Welcome to the Drink Order App</h1>
+        <button id="explore-button">Explore Menu</button>
+        <audio id="welcome" src="welcome.mp3"></audio> <!-- Welcome sound -->
     </div>
 
-<div id="menu">
-    <h1>Drink Menu</h1>
-    <div id="drink-cards-container">
-        <div id="drink-cards"></div>
+    <!-- Menu Section -->
+    <div id="menu" style="display: none;">
+        <h2>Drink Menu</h2>
+        <div id="drink-cards" class="drink-cards-container"></div> <!-- Drink cards will be rendered here -->
+        <audio id="sound" src="notification.mp3"></audio> <!-- Notification sound -->
     </div>
-</div>
 
-
-    <div id="drink-details">
+    <!-- Drink Details Section -->
+    <div id="drink-details" class="popup" style="display: none;">
         <h2 id="drink-name"></h2>
         <p id="drink-description"></p>
         <p id="drink-ingredients"></p>
-        <button id="order-drink-button">Order this Drink</button>
         <button id="back-to-menu-button">Back to Menu</button>
+        <button id="order-drink-button">Order this Drink</button>
     </div>
 
-    <div id="order-form">
-        <h2>Order Form</h2>
-        <h3>Estimated wait time: <span id="wait-time"></span> minutes.</h3>
-        <p>This is just an estimate. Some drinks may take longer.</p>
+    <!-- Order Form -->
+    <div id="order-form" class="popup" style="display: none;">
+        <h2>Order Drink</h2>
         <form id="drink-form">
-            <label for="name">Name for order:</label>
-            <input type="text" id="name" placeholder="Your name here" required>
-            <label for="drink">Select Drink:</label>
-            <select id="drink" name="drink"></select>
+            <label for="drink">Choose Drink:</label>
+            <select id="drink" name="drink"></select> <!-- Dropdown populated by JS -->
+
+            <label for="name">Your Name:</label>
+            <input type="text" id="name" name="name" required>
+
             <button type="submit">Place Order</button>
         </form>
-        <p id="order-message"></p>
-        <button id="close-form-button">Close</button>
+        <button id="close-form-button">Cancel</button>
     </div>
 
-    <!-- Popup notifications -->
+    <!-- Success Popup -->
     <div id="success-popup" class="popup">
-        <div class="checkmark">&#10003;</div>
-        <div class="title">Order Placed Successfully</div>
-        <div class="message">Your Order ID is <span id="order-id"></span>. The name on the order is <span id="name1"></span>. You will get notifications when your drink is in progress and when it is ready!</div>
-        <div class="subtitle">Please keep the app open!</div>
+        <h2>Order Placed Successfully!</h2>
+        <p>Your order ID is: <span id="order-id"></span></p>
+        <p>Thank you, <span id="name1"></span>!</p>
         <button onclick="closePopup('success-popup')">Close</button>
     </div>
+
+    <!-- In Progress Popup -->
     <div id="inprogress-popup" class="popup">
-        <div class="title">Order Update</div>
-        <div class="message">Your order is now in progress.</div>
+        <h2>Order In Progress!</h2>
+        <p>Please wait, your order is being prepared.</p>
         <button onclick="closePopup('inprogress-popup')">Close</button>
     </div>
+
+    <!-- Completed Popup -->
     <div id="completed-popup" class="popup">
-        <div class="title">Order Update</div>
-        <div class="message">Your order is ready for pickup. You can pick up your order under the name <span id="name2"></span></div>
+        <h2>Order Complete!</h2>
+        <p>Your order for <span id="name2"></span> is ready!</p>
         <button onclick="closePopup('completed-popup')">Close</button>
     </div>
 
+    <!-- Estimated Wait Time Display -->
+    <div id="wait-time-display">
+        <p>Estimated Wait Time: <span id="wait-time">0</span> minutes</p>
+    </div>
     <audio id="sound" src="225661-ComputerSFX-alerts-071.wav" preload="auto"></audio>
     <audio id="welcome" src="advertising-logo-199582.mp3" preload="auto"></audio>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script>
-    // Initialize Supabase
-    const supabase = window.supabase.createClient('https://utgmmvofnginuwvzajig.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Z21tdm9mbmdpbnV3dnphamlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjE5NTczMzksImV4cCI6MjAzNzUzMzMzOX0.YWH5Ceiz0OI_h8M6wG1M2UsDXM_43i5UdopmYLGO7aE');
-    const sound = document.getElementById('sound');
-    const welcome = document.getElementById('welcome');
-    let drinksData = [];
+// Initialize Supabase
+// Initialize Supabase
+const supabase = window.supabase.createClient(
+    'https://utgmmvofnginuwvzajig.supabase.co', 
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Z21tdm9mbmdpbnV3dnphamlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjE5NTczMzksImV4cCI6MjAzNzUzMzMzOX0.YWH5Ceiz0OI_h8M6wG1M2UsDXM_43i5UdopmYLGO7aE'
+);
 
-    document.getElementById('explore-button').addEventListener('click', async () => {
-        document.getElementById('welcome-popup').style.display = 'none';
-        document.getElementById('menu').style.display = 'block';
-            // Play intro sound muted
-            welcome.play();
-                await fetchDrinks();
-            renderDrinkCards();
-            sound.muted = true; // Mute audio
-            sound.play().catch(error => {
-                console.error('Error playing intro sound:', error);
-            });
+const sound = document.getElementById('sound');
+const welcome = document.getElementById('welcome');
+let drinksData = [];
 
-            sound.onended = function(){
-                sound.muted = false; // Unmute audio
-            };
-        });
-
-    async function fetchDrinks() {
-        const { data, error } = await supabase
-            .from('drinks')
-            .select('*');
-
-        if (error) {
-            console.error('Error fetching drinks:', error);
-            return;
-        }
-
-        drinksData = data;
-    }
-
-    function renderDrinkCards() {
-        const drinkCardsContainer = document.getElementById('drink-cards');
-        drinkCardsContainer.innerHTML = '';
-
-        drinksData.forEach(drink => {
-            const card = document.createElement('div');
-            card.className = 'drink-card';
-            card.innerHTML = `
-                <h3>${drink.name}</h3>
-                <p>${drink.description.substring(0, 50)}...</p>
-                <button onclick="viewDrink('${drink.name}')">View this Drink</button>`
-            ;
-            drinkCardsContainer.appendChild(card);
-        });
-    }
-
-    function viewDrink(drinkName) {
-        const drink = drinksData.find(d => d.name === drinkName);
-        if (drink) {
-            document.getElementById('drink-name').innerText = drink.name;
-            document.getElementById('drink-description').innerText =  `Description: ${drink.description}`;
-            document.getElementById('drink-ingredients').innerText = `Ingredients: ${drink.ingredients}`;
-            document.getElementById('drink-details').style.display = 'block';
-            document.getElementById('menu').style.display = 'none';
-        }
-    }
-
-    document.getElementById('back-to-menu-button').addEventListener('click', () => {
-        document.getElementById('drink-details').style.display = 'none';
-        document.getElementById('menu').style.display = 'block';
+document.getElementById('explore-button').addEventListener('click', async () => {
+    document.getElementById('welcome-popup').style.display = 'none';
+    document.getElementById('menu').style.display = 'block';
+    
+    // Play intro sound muted
+    welcome.play();
+    await fetchDrinks();
+    renderDrinkCards();
+    sound.muted = true; // Mute audio
+    sound.play().catch(error => {
+        console.error('Error playing intro sound:', error);
     });
 
-    document.getElementById('order-drink-button').addEventListener('click', () => {
-        const selectedDrink = document.getElementById('drink-name').innerText;
-        populateDrinkDropdown(selectedDrink);
-        document.getElementById('drink-details').style.display = 'none';
-        document.getElementById('order-form').style.display = 'block';
-    });
+    sound.onended = function() {
+        sound.muted = false; // Unmute audio
+    };
+});
 
-    function populateDrinkDropdown(selectedDrink) {
-        const drinkSelect = document.getElementById('drink');
-        drinkSelect.innerHTML = '';
-        drinksData.forEach(drink => {
-            const option = document.createElement('option');
-            option.value = drink.name;
-            option.text = drink.name;
-            if (drink.name === selectedDrink) {
-                option.selected = true;
-            }
-            drinkSelect.appendChild(option);
-        });
+async function fetchDrinks() {
+    const { data, error } = await supabase
+        .from('drinks')
+        .select('*');
+
+    if (error) {
+        console.error('Error fetching drinks:', error);
+        return;
     }
+
+    drinksData = data;
+}
+
+function renderDrinkCards() {
+    const drinkCardsContainer = document.getElementById('drink-cards');
+    drinkCardsContainer.innerHTML = '';
+
+    drinksData.forEach(drink => {
+        const card = document.createElement('div');
+        card.className = 'drink-card';
+        card.innerHTML = `
+            <h3>${drink.name}</h3>
+            <p>${drink.description.substring(0, 50)}...</p>
+            <button onclick="viewDrink('${drink.name}')">View this Drink</button>`;
+        drinkCardsContainer.appendChild(card);
+    });
+}
+
+function viewDrink(drinkName) {
+    const drink = drinksData.find(d => d.name === drinkName);
+    if (drink) {
+        document.getElementById('drink-name').innerText = drink.name;
+        document.getElementById('drink-description').innerText =  `Description: ${drink.description}`;
+        document.getElementById('drink-ingredients').innerText = `Ingredients: ${drink.ingredients}`;
+        document.getElementById('drink-details').style.display = 'block';
+        document.getElementById('menu').style.display = 'none';
+    }
+}
+
+document.getElementById('back-to-menu-button').addEventListener('click', () => {
+    document.getElementById('drink-details').style.display = 'none';
+    document.getElementById('menu').style.display = 'block';
+});
+
+document.getElementById('order-drink-button').addEventListener('click', () => {
+    const selectedDrink = document.getElementById('drink-name').innerText;
+    populateDrinkDropdown(selectedDrink);
+    document.getElementById('drink-details').style.display = 'none';
+    document.getElementById('order-form').style.display = 'block';
+});
+
+function populateDrinkDropdown(selectedDrink) {
+    const drinkSelect = document.getElementById('drink');
+    drinkSelect.innerHTML = '';
+    drinksData.forEach(drink => {
+        const option = document.createElement('option');
+        option.value = drink.name;
+        option.text = drink.name;
+        if (drink.name === selectedDrink) {
+            option.selected = true;
+        }
+        drinkSelect.appendChild(option);
+    });
+}
 
 document.getElementById('drink-form').addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -397,17 +409,19 @@ document.getElementById('drink-form').addEventListener('submit', async (event) =
     document.getElementById('name1').innerText = name;
     showPopup('success-popup');
 });
-    document.getElementById('close-form-button').addEventListener('click', () => {
-        document.getElementById('order-form').style.display = 'none';
-        document.getElementById('menu').style.display = 'block';
-    });
 
-    function showPopup(popupId) {
-        const popup = document.getElementById(popupId);
-        if (popup) {
-            popup.classList.add('show');
-        }
+document.getElementById('close-form-button').addEventListener('click', () => {
+    document.getElementById('order-form').style.display = 'none';
+    document.getElementById('menu').style.display = 'block';
+});
+
+function showPopup(popupId) {
+    const popup = document.getElementById(popupId);
+    if (popup) {
+        popup.classList.add('show');
     }
+}
+
 function closePopup(popupId) {
     const popup = document.getElementById(popupId);
     if (popup) {
@@ -418,6 +432,7 @@ function closePopup(popupId) {
         }
     }
 }
+
 let waitTime = 0;
 const waitTimeDisplay = document.getElementById('wait-time');
 setInterval(async () => {
@@ -465,42 +480,64 @@ async function checkOrderStatus() {
             }
             continue;
         }
-                if (order) {
-                    if (order.status === 'inprogress') {
-                        document.title = "(CLICK HERE) Order in progress";
-                        if (!localStorage.getItem('inprogressNotify')) {
-                            localStorage.setItem('inprogressNotify', 'true');
-                            playSound(); // Play sound for in progress
-                            showPopup('inprogress-popup');
-                        }
-                    }
-                    }
+        if (order) {
+            if (order.status === 'inprogress') {
+                document.title = "(CLICK HERE) Order in progress";
+                if (!localStorage.getItem('inprogressNotify')) {
+                    localStorage.setItem('inprogressNotify', 'true');
+                    playSound(); // Play sound for in progress
+                    showPopup('inprogress-popup');
                 }
             }
-
-    function removeOrderFromLocalStorage(orderId) {
-        let orderIds = JSON.parse(localStorage.getItem('orderIds')) || [];
-        orderIds = orderIds.filter(id => id !== orderId);
-        if (orderIds.length > 0) {
-            localStorage.setItem('orderIds', JSON.stringify(orderIds));
-        } else {
-            localStorage.removeItem('orderIds');
         }
     }
+}
 
-    function resetNotificationFlags() {
-        localStorage.removeItem('inprogressNotify');
-        localStorage.removeItem('completeNotify');
+function removeOrderFromLocalStorage(orderId) {
+    let orderIds = JSON.parse(localStorage.getItem('orderIds')) || [];
+    orderIds = orderIds.filter(id => id !== orderId);
+    if (orderIds.length > 0) {
+        localStorage.setItem('orderIds', JSON.stringify(orderIds));
+    } else {
+        localStorage.removeItem('orderIds');
     }
+}
 
-    function playSound() {
-        // Ensure the sound is played by a user interaction
-        sound.play().catch(error => {
-            console.error('Failed to play sound:', error);
-        });
+function resetNotificationFlags() {
+    localStorage.removeItem('inprogressNotify');
+    localStorage.removeItem('completeNotify');
+}
+
+function playSound() {
+    // Ensure the sound is played by a user interaction
+    sound.play().catch(error => {
+        console.error('Failed to play sound:', error);
+    });
+}
+
+setInterval(checkOrderStatus, 5000); // Check every 5 seconds
+
+// Feature: Check Order Status by Order ID
+document.getElementById('check-order-form').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const orderId = document.getElementById('order-id-input').value;
+
+    try {
+        const { data: order, error } = await supabase
+            .from('orders')
+            .select('*')
+            .eq('id', orderId)
+            .single();
+
+        if (error || !order) {
+            alert('Order not found. Please check the order ID and try again.');
+        } else {
+            alert(`Order Status: ${order.status}`);
+        }
+    } catch (error) {
+        console.error('Error checking order status:', error);
     }
-
-    setInterval(checkOrderStatus, 5000); // Check every 5 seconds
+});
 </script>
 </body>
 </html>
