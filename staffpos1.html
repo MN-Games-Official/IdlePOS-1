@@ -30,12 +30,13 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: relative;
         }
         #ingredients-list li {
             margin-bottom: 10px;
             font-size: 16px;
-            list-style-type: disc; /* Ensure bullet points are displayed */
-            padding-left: 20px; /* Offset the text to make room for the bullet */
+            list-style-type: disc;
+            padding-left: 20px;
         }
         .timer {
             font-size: 14px;
@@ -69,6 +70,22 @@
             font-size: 18px;
             color: #666;
             text-align: center;
+        }
+        .next-order {
+            background-color: #e0f7fa;
+            position: relative;
+            padding: 20px;
+            border: 2px solid #007BFF;
+        }
+        .next-order::before {
+            content: "Next Order";
+            position: absolute;
+            top: -10px;
+            left: 10px;
+            font-size: 14px;
+            color: #007BFF;
+            background-color: #ffffff;
+            padding: 0 5px;
         }
     </style>
 </head>
@@ -131,7 +148,7 @@
                 noOrdersMessage.style.display = 'block';
             } else {
                 noOrdersMessage.style.display = 'none';
-                orders.forEach(order => {
+                orders.forEach((order, index) => {
                     const li = document.createElement('li');
                     li.innerHTML = `Order ID: ${order.id} - Drink: ${order.drink} <span id="timer-${order.id}" class="timer"></span>`;
                     
@@ -144,6 +161,11 @@
                     orderItems.appendChild(li);
 
                     startTimer(order.id, order.created_at);
+
+                    // Highlight the first order
+                    if (index === 0) {
+                        li.classList.add('next-order');
+                    }
                 });
             }
 
@@ -165,9 +187,10 @@
 
         async function showOrderDetails(order) {
             document.getElementById('order-details').style.display = 'block';
-            document.getElementById('order-info').innerText = `Order ID: ${order.id} - Drink: ${order.drink}`;
+            // Show order ID, drink name, and customer name
+            document.getElementById('order-info').innerText = `Order ID: ${order.id} - Drink: ${order.drink} - Name: ${order.customer_name}`;
             const ingredientsList = document.getElementById('ingredients-list');
-            ingredientsList.innerHTML = ''; // Clear previous list
+            ingredientsList.innerHTML = '';
 
             const { data: drinkDetails, error } = await supabase
                 .from('drinks')
