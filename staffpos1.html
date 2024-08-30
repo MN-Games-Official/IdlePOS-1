@@ -188,7 +188,7 @@
         async function showOrderDetails(order) {
             document.getElementById('order-details').style.display = 'block';
             // Show order ID, drink name, and customer name
-            document.getElementById('order-info').innerText = `Order ID: ${order.id} - Drink: ${order.drink} - Name: ${order.customer_name}`;
+            document.getElementById('order-info').innerText = `Order ID: ${order.id} - Drink: ${order.drink} - Name: ${order.name}`;
             const ingredientsList = document.getElementById('ingredients-list');
             ingredientsList.innerHTML = '';
 
