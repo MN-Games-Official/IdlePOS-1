@@ -257,27 +257,28 @@ select:focus, input:focus {
         <button id="close-form-button">Cancel</button>
     </div>
 
-    <!-- Success Popup -->
-    <div id="success-popup" class="popup">
-        <h2>Order Placed Successfully!</h2>
-        <p>Your order ID is: <span id="order-id"></span></p>
-        <p>Thank you, <span id="name1"></span>!</p>
-        <button onclick="closePopup('success-popup')">Close</button>
-    </div>
+<!-- Success Popup -->
+<div id="success-popup" class="popup">
+    <div class="checkmark">&#10003;</div>
+    <div class="title">Order Placed Successfully</div>
+    <div class="message">Your Order ID is <span id="order-id"></span>. The name on the order is <span id="name1"></span>. You will get notifications when your drink is in progress and when it is ready!</div>
+    <div class="subtitle">Please keep the app open!</div>
+    <button onclick="closePopup('success-popup')">Close</button>
+</div>
 
-    <!-- In Progress Popup -->
-    <div id="inprogress-popup" class="popup">
-        <h2>Order In Progress!</h2>
-        <p>Please wait, your order is being prepared.</p>
-        <button onclick="closePopup('inprogress-popup')">Close</button>
-    </div>
+<!-- In-Progress Notification -->
+<div id="inprogress-popup" class="popup">
+    <div class="title">Order Update</div>
+    <div class="message">Your order of <span id="inprogress-drink"></span> is now in progress.</div>
+    <button onclick="closePopup('inprogress-popup')">Close</button>
+</div>
 
-    <!-- Completed Popup -->
-    <div id="completed-popup" class="popup">
-        <h2>Order Complete!</h2>
-        <p>Your order for <span id="name2"></span> is ready!</p>
-        <button onclick="closePopup('completed-popup')">Close</button>
-    </div>
+<!-- Completed Notification -->
+<div id="completed-popup" class="popup">
+    <div class="title">Order Update</div>
+    <div class="message">Your order of <span id="completed-drink"></span> is ready for pickup. You can pick up your order under the name <span id="name2"></span></div>
+    <button onclick="closePopup('completed-popup')">Close</button>
+</div>
 
     <!-- Estimated Wait Time Display -->
     <div id="wait-time-display">
@@ -287,257 +288,231 @@ select:focus, input:focus {
     <audio id="welcome" src="advertising-logo-199582.mp3" preload="auto"></audio>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script>
-// Initialize Supabase
-// Initialize Supabase
-const supabase = window.supabase.createClient(
-    'https://utgmmvofnginuwvzajig.supabase.co', 
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Z21tdm9mbmdpbnV3dnphamlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjE5NTczMzksImV4cCI6MjAzNzUzMzMzOX0.YWH5Ceiz0OI_h8M6wG1M2UsDXM_43i5UdopmYLGO7aE'
-);
+<script>
+    // Initialize Supabase
+    const supabase = window.supabase.createClient('https://utgmmvofnginuwvzajig.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Z21tdm9mbmdpbnV3dnphamlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjE5NTczMzksImV4cCI6MjAzNzUzMzMzOX0.YWH5Ceiz0OI_h8M6wG1M2UsDXM_43i5UdopmYLGO7aE');
+    const sound = document.getElementById('sound');
+    const welcome = document.getElementById('welcome');
+    let drinksData = [];
 
-const sound = document.getElementById('sound');
-const welcome = document.getElementById('welcome');
-let drinksData = [];
+    document.getElementById('explore-button').addEventListener('click', async () => {
+        document.getElementById('welcome-popup').style.display = 'none';
+        document.getElementById('menu').style.display = 'block';
+        welcome.play();
+        await fetchDrinks();
+        renderDrinkCards();
+        sound.muted = true; // Mute audio
+        sound.play().catch(error => {
+            console.error('Error playing intro sound:', error);
+        });
 
-document.getElementById('explore-button').addEventListener('click', async () => {
-    document.getElementById('welcome-popup').style.display = 'none';
-    document.getElementById('menu').style.display = 'block';
-    
-    // Play intro sound muted
-    welcome.play();
-    await fetchDrinks();
-    renderDrinkCards();
-    sound.muted = true; // Mute audio
-    sound.play().catch(error => {
-        console.error('Error playing intro sound:', error);
+        sound.onended = function(){
+            sound.muted = false; // Unmute audio
+        };
     });
 
-    sound.onended = function() {
-        sound.muted = false; // Unmute audio
-    };
-});
-
-async function fetchDrinks() {
-    const { data, error } = await supabase
-        .from('drinks')
-        .select('*');
-
-    if (error) {
-        console.error('Error fetching drinks:', error);
-        return;
-    }
-
-    drinksData = data;
-}
-
-function renderDrinkCards() {
-    const drinkCardsContainer = document.getElementById('drink-cards');
-    drinkCardsContainer.innerHTML = '';
-
-    drinksData.forEach(drink => {
-        const card = document.createElement('div');
-        card.className = 'drink-card';
-        card.innerHTML = `
-            <h3>${drink.name}</h3>
-            <p>${drink.description.substring(0, 50)}...</p>
-            <button onclick="viewDrink('${drink.name}')">View this Drink</button>`;
-        drinkCardsContainer.appendChild(card);
-    });
-}
-
-function viewDrink(drinkName) {
-    const drink = drinksData.find(d => d.name === drinkName);
-    if (drink) {
-        document.getElementById('drink-name').innerText = drink.name;
-        document.getElementById('drink-description').innerText =  `Description: ${drink.description}`;
-        document.getElementById('drink-ingredients').innerText = `Ingredients: ${drink.ingredients}`;
-        document.getElementById('drink-details').style.display = 'block';
-        document.getElementById('menu').style.display = 'none';
-    }
-}
-
-document.getElementById('back-to-menu-button').addEventListener('click', () => {
-    document.getElementById('drink-details').style.display = 'none';
-    document.getElementById('menu').style.display = 'block';
-});
-
-document.getElementById('order-drink-button').addEventListener('click', () => {
-    const selectedDrink = document.getElementById('drink-name').innerText;
-    populateDrinkDropdown(selectedDrink);
-    document.getElementById('drink-details').style.display = 'none';
-    document.getElementById('order-form').style.display = 'block';
-});
-
-function populateDrinkDropdown(selectedDrink) {
-    const drinkSelect = document.getElementById('drink');
-    drinkSelect.innerHTML = '';
-    drinksData.forEach(drink => {
-        const option = document.createElement('option');
-        option.value = drink.name;
-        option.text = drink.name;
-        if (drink.name === selectedDrink) {
-            option.selected = true;
-        }
-        drinkSelect.appendChild(option);
-    });
-}
-
-document.getElementById('drink-form').addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const drink = document.getElementById('drink').value;
-    const id = Math.floor(1000 + Math.random() * 9000); // Generate a 4-digit ID
-    const name = document.getElementById('name').value;
-
-    welcome.play();
-    document.title = "Order placed successfully";
-
-    const { data, error } = await supabase
-        .from('orders')
-        .insert([{ id, drink, status: 'pending', name }]);
-
-    if (error) {
-        console.error(error);
-        document.getElementById('order-message').innerText = 'Error placing order!';
-        return;
-    }
-
-    // Store name under each order_id in localStorage
-    const orders = JSON.parse(localStorage.getItem('orders')) || {};
-    orders[id] = name;
-    localStorage.setItem('orders', JSON.stringify(orders));
-
-    document.getElementById('order-id').innerText = id;
-    document.getElementById('name1').innerText = name;
-    showPopup('success-popup');
-});
-
-document.getElementById('close-form-button').addEventListener('click', () => {
-    document.getElementById('order-form').style.display = 'none';
-    document.getElementById('menu').style.display = 'block';
-});
-
-function showPopup(popupId) {
-    const popup = document.getElementById(popupId);
-    if (popup) {
-        popup.classList.add('show');
-    }
-}
-
-function closePopup(popupId) {
-    const popup = document.getElementById(popupId);
-    if (popup) {
-        popup.classList.remove('show');
-        if (popupId === 'success-popup') {
-            document.getElementById('order-form').style.display = 'none';
-            document.getElementById('menu').style.display = 'block';
-        }
-    }
-}
-
-let waitTime = 0;
-const waitTimeDisplay = document.getElementById('wait-time');
-setInterval(async () => {
-    // Query the orders table to get the count of entries
-    const { count, error } = await supabase
-        .from('orders')
-        .select('*', { count: 'exact' });
-
-    if (error) {
-        console.error('Error fetching order count:', error);
-        return;
-    }
-
-    // Multiply the count by 3 and store it in the variable
-    waitTime = count * 3 + 3;
-    waitTimeDisplay.innerText = waitTime;
-    console.log(`Multiplied Order Count: ${waitTime}`);
-}, 5000); // 5000ms = 5 seconds
-
-async function checkOrderStatus() {
-    const orders = JSON.parse(localStorage.getItem('orders')) || {};
-    for (const [orderId, orderName] of Object.entries(orders)) {
-        const { data: order, error } = await supabase
-            .from('orders')
-            .select('*')
-            .eq('id', orderId)
-            .single();
+    async function fetchDrinks() {
+        const { data, error } = await supabase
+            .from('drinks')
+            .select('*');
 
         if (error) {
-            if (error.code === 'PGRST116') {
-                document.title = "(CLICK HERE) Order complete";
-                if (!localStorage.getItem('completeNotify')) {
-                    localStorage.setItem('completeNotify', 'true');
-                    playSound(); // Play sound for completed
-                    document.getElementById('name2').innerText = orderName;
-                    showPopup('completed-popup');
-                    // Reset notification flags
-                    resetNotificationFlags();
-                    // Remove the completed order ID from localStorage
-                    delete orders[orderId];
-                    localStorage.setItem('orders', JSON.stringify(orders));
-                }
-            } else {
-                console.error(error);
-            }
-            continue;
+            console.error('Error fetching drinks:', error);
+            return;
         }
-        if (order) {
-            if (order.status === 'inprogress') {
-                document.title = "(CLICK HERE) Order in progress";
-                if (!localStorage.getItem('inprogressNotify')) {
-                    localStorage.setItem('inprogressNotify', 'true');
-                    playSound(); // Play sound for in progress
-                    showPopup('inprogress-popup');
-                }
-            }
+
+        drinksData = data;
+    }
+
+    function renderDrinkCards() {
+        const drinkCardsContainer = document.getElementById('drink-cards');
+        drinkCardsContainer.innerHTML = '';
+
+        drinksData.forEach(drink => {
+            const card = document.createElement('div');
+            card.className = 'drink-card';
+            card.innerHTML = `
+                <h3>${drink.name}</h3>
+                <p>${drink.description.substring(0, 50)}...</p>
+                <button onclick="viewDrink('${drink.name}')">View this Drink</button>`
+            ;
+            drinkCardsContainer.appendChild(card);
+        });
+    }
+
+    function viewDrink(drinkName) {
+        const drink = drinksData.find(d => d.name === drinkName);
+        if (drink) {
+            document.getElementById('drink-name').innerText = drink.name;
+            document.getElementById('drink-description').innerText =  `Description: ${drink.description}`;
+            document.getElementById('drink-ingredients').innerText = `Ingredients: ${drink.ingredients}`;
+            document.getElementById('drink-details').style.display = 'block';
+            document.getElementById('menu').style.display = 'none';
         }
     }
-}
 
-function removeOrderFromLocalStorage(orderId) {
-    let orderIds = JSON.parse(localStorage.getItem('orderIds')) || [];
-    orderIds = orderIds.filter(id => id !== orderId);
-    if (orderIds.length > 0) {
-        localStorage.setItem('orderIds', JSON.stringify(orderIds));
-    } else {
-        localStorage.removeItem('orderIds');
-    }
-}
-
-function resetNotificationFlags() {
-    localStorage.removeItem('inprogressNotify');
-    localStorage.removeItem('completeNotify');
-}
-
-function playSound() {
-    // Ensure the sound is played by a user interaction
-    sound.play().catch(error => {
-        console.error('Failed to play sound:', error);
+    document.getElementById('back-to-menu-button').addEventListener('click', () => {
+        document.getElementById('drink-details').style.display = 'none';
+        document.getElementById('menu').style.display = 'block';
     });
-}
 
-setInterval(checkOrderStatus, 5000); // Check every 5 seconds
+    document.getElementById('order-drink-button').addEventListener('click', () => {
+        const selectedDrink = document.getElementById('drink-name').innerText;
+        populateDrinkDropdown(selectedDrink);
+        document.getElementById('drink-details').style.display = 'none';
+        document.getElementById('order-form').style.display = 'block';
+    });
 
-// Feature: Check Order Status by Order ID
-document.getElementById('check-order-form').addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const orderId = document.getElementById('order-id-input').value;
-
-    try {
-        const { data: order, error } = await supabase
-            .from('orders')
-            .select('*')
-            .eq('id', orderId)
-            .single();
-
-        if (error || !order) {
-            alert('Order not found. Please check the order ID and try again.');
-        } else {
-            alert(`Order Status: ${order.status}`);
-        }
-    } catch (error) {
-        console.error('Error checking order status:', error);
+    function populateDrinkDropdown(selectedDrink) {
+        const drinkSelect = document.getElementById('drink');
+        drinkSelect.innerHTML = '';
+        drinksData.forEach(drink => {
+            const option = document.createElement('option');
+            option.value = drink.name;
+            option.text = drink.name;
+            if (drink.name === selectedDrink) {
+                option.selected = true;
+            }
+            drinkSelect.appendChild(option);
+        });
     }
-});
+
+    document.getElementById('drink-form').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const drink = document.getElementById('drink').value;
+        const id = Math.floor(1000 + Math.random() * 9000); // Generate a 4-digit ID
+        const name = document.getElementById('name').value;
+
+        welcome.play();
+        document.title = "Order placed successfully";
+
+        const { data, error } = await supabase
+            .from('orders')
+            .insert([{ id, drink, status: 'pending', name }]);
+
+        if (error) {
+            console.error(error);
+            document.getElementById('order-message').innerText = 'Error placing order!';
+            return;
+        }
+
+        // Store drink name and order name under each order_id in localStorage
+        const orders = JSON.parse(localStorage.getItem('orders')) || {};
+        orders[id] = { name, drink };
+        localStorage.setItem('orders', JSON.stringify(orders));
+
+        document.getElementById('order-id').innerText = id;
+        document.getElementById('name1').innerText = name;
+        showPopup('success-popup');
+    });
+
+    document.getElementById('close-form-button').addEventListener('click', () => {
+        document.getElementById('order-form').style.display = 'none';
+        document.getElementById('menu').style.display = 'block';
+    });
+
+    function showPopup(popupId) {
+        const popup = document.getElementById(popupId);
+        if (popup) {
+            popup.classList.add('show');
+        }
+    }
+
+    function closePopup(popupId) {
+        const popup = document.getElementById(popupId);
+        if (popup) {
+            popup.classList.remove('show');
+            if (popupId === 'success-popup') {
+                document.getElementById('order-form').style.display = 'none';
+                document.getElementById('menu').style.display = 'block';
+            }
+        }
+    }
+
+    let waitTime = 0;
+    const waitTimeDisplay = document.getElementById('wait-time');
+    setInterval(async () => {
+        // Query the orders table to get the count of entries
+        const { count, error } = await supabase
+            .from('orders')
+            .select('*', { count: 'exact' });
+
+        if (error) {
+            console.error('Error fetching order count:', error);
+            return;
+        }
+
+        // Multiply the count by 3 and store it in the variable
+        waitTime = count * 3 + 3;
+        waitTimeDisplay.innerText = waitTime;
+        console.log(`Multiplied Order Count: ${waitTime}`);
+    }, 5000); // 5000ms = 5 seconds
+
+    async function checkOrderStatus() {
+        const orders = JSON.parse(localStorage.getItem('orders')) || {};
+        for (const [orderId, { name, drink }] of Object.entries(orders)) {
+            const { data: order, error } = await supabase
+                .from('orders')
+                .select('*')
+                .eq('id', orderId)
+                .single();
+
+            if (error) {
+                if (error.code === 'PGRST116') {
+                    document.title = "(CLICK HERE) Order complete";
+                    if (!localStorage.getItem('completeNotify')) {
+                        localStorage.setItem('completeNotify', 'true');
+                        playSound(); // Play sound for completed
+                        document.getElementById('name2').innerText = name;
+                        showPopup('completed-popup');
+                        // Reset notification flags
+                        resetNotificationFlags();
+                        // Remove the completed order ID from localStorage
+                        delete orders[orderId];
+                        localStorage.setItem('orders', JSON.stringify(orders));
+                    }
+                } else {
+                    console.error(error);
+                }
+                continue;
+            }
+            if (order) {
+                if (order.status === 'inprogress') {
+                    document.title = "(CLICK HERE) Order in progress";
+                    if (!localStorage.getItem('inprogressNotify')) {
+                        localStorage.setItem('inprogressNotify', 'true');
+                        playSound(); // Play sound for in progress
+                        document.getElementById('inprogress-drink').innerText = drink;
+                        showPopup('inprogress-popup');
+                    }
+                }
+            }
+        }
+    }
+
+    function removeOrderFromLocalStorage(orderId) {
+        let orderIds = JSON.parse(localStorage.getItem('orderIds')) || [];
+        orderIds = orderIds.filter(id => id !== orderId);
+        if (orderIds.length > 0) {
+            localStorage.setItem('orderIds', JSON.stringify(orderIds));
+        } else {
+            localStorage.removeItem('orderIds');
+        }
+    }
+
+    function resetNotificationFlags() {
+        localStorage.removeItem('inprogressNotify');
+        localStorage.removeItem('completeNotify');
+    }
+
+    function playSound() {
+        // Ensure the sound is played by a user interaction
+        sound.play().catch(error => {
+            console.error('Failed to play sound:', error);
+        });
+    }
+
+    setInterval(checkOrderStatus, 5000); // Check every 5 seconds
 </script>
 </body>
 </html>
