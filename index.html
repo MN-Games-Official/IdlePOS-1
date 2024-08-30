@@ -218,43 +218,43 @@ select:focus, input:focus {
     </style>
 </head>
 <body>
-<body>
     <!-- Welcome Popup -->
-    <div id="welcome-popup" class="popup">
-        <h1>Welcome to the Drink Order App</h1>
-        <button id="explore-button">Explore Menu</button>
-        <audio id="welcome" src="welcome.mp3"></audio> <!-- Welcome sound -->
+    <div id="welcome-popup">
+        <h1>Welcome!</h1>
+        <p>Welcome to Steve and Stacie's fall party on beautiful Weaver Lake. We're so glad you could join us again this year!</p>
+        <p>Please enjoy the live music of Vinnie Rose, and click below to order from the cocktail menu. (Beer and seltzers available at the bar/coolers.)</p>
+        <button id="explore-button">Click to Explore/Order Adult Beverages</button>
     </div>
 
-    <!-- Menu Section -->
-    <div id="menu" style="display: none;">
-        <h2>Drink Menu</h2>
-        <div id="drink-cards" class="drink-cards-container"></div> <!-- Drink cards will be rendered here -->
-        <audio id="sound" src="notification.mp3"></audio> <!-- Notification sound -->
+<div id="menu">
+    <h1>Drink Menu</h1>
+    <div id="drink-cards-container">
+        <div id="drink-cards"></div>
     </div>
+</div>
 
-    <!-- Drink Details Section -->
-    <div id="drink-details" class="popup" style="display: none;">
+
+    <div id="drink-details">
         <h2 id="drink-name"></h2>
         <p id="drink-description"></p>
         <p id="drink-ingredients"></p>
-        <button id="back-to-menu-button">Back to Menu</button>
         <button id="order-drink-button">Order this Drink</button>
+        <button id="back-to-menu-button">Back to Menu</button>
     </div>
 
-    <!-- Order Form -->
-    <div id="order-form" class="popup" style="display: none;">
-        <h2>Order Drink</h2>
+    <div id="order-form">
+        <h2>Order Form</h2>
+        <h3>Estimated wait time: <span id="wait-time"></span> minutes.</h3>
+        <p>This is just an estimate. Some drinks may take longer.</p>
         <form id="drink-form">
-            <label for="drink">Choose Drink:</label>
-            <select id="drink" name="drink"></select> <!-- Dropdown populated by JS -->
-
-            <label for="name">Your Name:</label>
-            <input type="text" id="name" name="name" required>
-
+            <label for="name">Name for order:</label>
+            <input type="text" id="name" placeholder="Your name here" required>
+            <label for="drink">Select Drink:</label>
+            <select id="drink" name="drink"></select>
             <button type="submit">Place Order</button>
         </form>
-        <button id="close-form-button">Cancel</button>
+        <p id="order-message"></p>
+        <button id="close-form-button">Close</button>
     </div>
 
 <!-- Success Popup -->
