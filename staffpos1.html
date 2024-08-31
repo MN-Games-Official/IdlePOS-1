@@ -105,160 +105,210 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script>
-        const supabase = window.supabase.createClient('https://utgmmvofnginuwvzajig.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Z21tdm9mbmdpbnV3dnphamlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjE5NTczMzksImV4cCI6MjAzNzUzMzMzOX0.YWH5Ceiz0OI_h8M6wG1M2UsDXM_43i5UdopmYLGO7aE');
-        let currentOrderId = localStorage.getItem('currentOrderId') || null;
-        let timers = {};
+ const supabase = window.supabase.createClient(
+    'https://utgmmvofnginuwvzajig.supabase.co', 
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV0Z21tdm9mbmdpbnV3dnphamlnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjE5NTczMzksImV4cCI6MjAzNzUzMzMzOX0.YWH5Ceiz0OI_h8M6wG1M2UsDXM_43i5UdopmYLGO7aE'
+);
+let currentOrderId = localStorage.getItem('currentOrderId') || null;
+let timers = {};
 
-        function formatTime(seconds) {
-            const minutes = Math.floor(seconds / 60);
-            const sec = seconds % 60;
-            return `${minutes}m ${sec}s`;
+// Utility function to format time in minutes and seconds
+function formatTime(seconds) {
+    const minutes = Math.floor(seconds / 60);
+    const sec = seconds % 60;
+    return `${minutes}m ${sec}s`;
+}
+
+// Function to start a timer for each order
+function startTimer(orderId, createdAt) {
+    const startTime = new Date(createdAt).getTime();
+    timers[orderId] = setInterval(() => {
+        const currentTime = Date.now();
+        const elapsedSeconds = Math.floor((currentTime - startTime) / 1000);
+        const timerElement = document.getElementById(`timer-${orderId}`);
+        if (timerElement) {
+            timerElement.innerText = formatTime(elapsedSeconds);
+        } else {
+            clearInterval(timers[orderId]);
         }
+    }, 1000);
+}
 
-        function startTimer(orderId, createdAt) {
-            const startTime = new Date(createdAt).getTime();
-            timers[orderId] = setInterval(() => {
-                const currentTime = Date.now();
-                const elapsedSeconds = Math.floor((currentTime - startTime) / 1000);
-                const timerElement = document.getElementById(`timer-${orderId}`);
-                if (timerElement) {
-                    timerElement.innerText = formatTime(elapsedSeconds);
-                } else {
-                    clearInterval(timers[orderId]);
-                }
-            }, 1000);
-        }
+// Function to load all pending orders
+async function loadOrders() {
+    const { data: orders, error } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('status', 'pending');
 
-        async function loadOrders() {
-            const { data: orders, error } = await supabase
-                .from('orders')
-                .select('*')
-                .eq('status', 'pending');
+    if (error) {
+        console.error('Error loading orders:', error);
+        return;
+    }
 
-            if (error) {
-                console.error('Error loading orders:', error);
-                return;
+    const orderItems = document.getElementById('order-items');
+    const noOrdersMessage = document.getElementById('no-orders');
+    orderItems.innerHTML = '';
+
+    if (orders.length === 0) {
+        noOrdersMessage.style.display = 'block';
+    } else {
+        noOrdersMessage.style.display = 'none';
+        orders.forEach((order, index) => {
+            const li = document.createElement('li');
+            li.innerHTML = `Order ID: ${order.id} - Drink: ${order.drink} <span id="timer-${order.id}" class="timer"></span>`;
+            
+            const acceptButton = document.createElement('button');
+            acceptButton.innerText = 'Accept';
+            acceptButton.disabled = (currentOrderId !== null);
+            acceptButton.addEventListener('click', () => checkAndAcceptOrder(order.id));
+
+            li.appendChild(acceptButton);
+            orderItems.appendChild(li);
+
+            startTimer(order.id, order.created_at);
+
+            // Highlight the first order
+            if (index === 0) {
+                li.classList.add('next-order');
             }
-
-            const orderItems = document.getElementById('order-items');
-            const noOrdersMessage = document.getElementById('no-orders');
-            orderItems.innerHTML = '';
-
-            if (orders.length === 0) {
-                noOrdersMessage.style.display = 'block';
-            } else {
-                noOrdersMessage.style.display = 'none';
-                orders.forEach((order, index) => {
-                    const li = document.createElement('li');
-                    li.innerHTML = `Order ID: ${order.id} - Drink: ${order.drink} <span id="timer-${order.id}" class="timer"></span>`;
-                    
-                    const acceptButton = document.createElement('button');
-                    acceptButton.innerText = 'Accept';
-                    acceptButton.disabled = (currentOrderId !== null);
-                    acceptButton.addEventListener('click', () => acceptOrder(order.id));
-                    
-                    li.appendChild(acceptButton);
-                    orderItems.appendChild(li);
-
-                    startTimer(order.id, order.created_at);
-
-                    // Highlight the first order
-                    if (index === 0) {
-                        li.classList.add('next-order');
-                    }
-                });
-            }
-
-            if (currentOrderId) {
-                const { data: orderDetails, error: detailsError } = await supabase
-                    .from('orders')
-                    .select('*')
-                    .eq('id', currentOrderId)
-                    .single();
-
-                if (detailsError) {
-                    console.error('Error loading order details:', detailsError);
-                    return;
-                }
-
-                showOrderDetails(orderDetails);
-            }
-        }
-
-        async function showOrderDetails(order) {
-            document.getElementById('order-details').style.display = 'block';
-            // Show order ID, drink name, and customer name
-            document.getElementById('order-info').innerText = `Order ID: ${order.id} - Drink: ${order.drink} - Name: ${order.name}`;
-            const ingredientsList = document.getElementById('ingredients-list');
-            ingredientsList.innerHTML = '';
-
-            const { data: drinkDetails, error } = await supabase
-                .from('drinks')
-                .select('ingredients')
-                .eq('name', order.drink)
-                .single();
-
-            if (error) {
-                console.error('Error fetching ingredients:', error);
-                return;
-            }
-
-            const ingredientsArray = drinkDetails.ingredients.split(',').map(ingredient => ingredient.trim());
-
-            ingredientsArray.forEach(ingredient => {
-                const li = document.createElement('li');
-                li.innerText = ingredient;
-                ingredientsList.appendChild(li);
-            });
-
-            document.getElementById('complete-button').onclick = () => completeOrder(order.id);
-        }
-
-        async function acceptOrder(id) {
-            if (currentOrderId) return;
-
-            const { data, error } = await supabase
-                .from('orders')
-                .update({ status: 'inprogress' })
-                .match({ id });
-
-            if (error) {
-                console.error('Error updating order status:', error);
-                return;
-            }
-
-            localStorage.setItem('currentOrderId', id);
-            currentOrderId = id;
-
-            clearInterval(timers[id]); // Stop the timer
-            delete timers[id];
-
-            loadOrders();
-        }
-
-        async function completeOrder(id) {
-            const { data, error } = await supabase
-                .from('orders')
-                .delete()
-                .match({ id });
-
-            if (error) {
-                console.error('Error completing order:', error);
-                return;
-            }
-
-            localStorage.removeItem('currentOrderId');
-            currentOrderId = null;
-
-            document.getElementById('order-details').style.display = 'none';
-            loadOrders();
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            loadOrders();
         });
+    }
 
-        setInterval(loadOrders, 5000);
+    if (currentOrderId) {
+        const { data: orderDetails, error: detailsError } = await supabase
+            .from('orders')
+            .select('*')
+            .eq('id', currentOrderId)
+            .single();
+
+        if (detailsError) {
+            console.error('Error loading order details:', detailsError);
+            return;
+        }
+
+        showOrderDetails(orderDetails);
+    }
+}
+
+// Function to display order details
+async function showOrderDetails(order) {
+    document.getElementById('order-details').style.display = 'block';
+    document.getElementById('order-info').innerText = `Order ID: ${order.id} - Drink: ${order.drink} - Name: ${order.name}`;
+    const ingredientsList = document.getElementById('ingredients-list');
+    ingredientsList.innerHTML = '';
+
+    const { data: drinkDetails, error } = await supabase
+        .from('drinks')
+        .select('ingredients')
+        .eq('name', order.drink)
+        .single();
+
+    if (error) {
+        console.error('Error fetching ingredients:', error);
+        return;
+    }
+
+    const ingredientsArray = drinkDetails.ingredients.split(',').map(ingredient => ingredient.trim());
+
+    ingredientsArray.forEach(ingredient => {
+        const li = document.createElement('li');
+        li.innerText = ingredient;
+        ingredientsList.appendChild(li);
+    });
+
+    document.getElementById('complete-button').onclick = () => completeOrder(order.id);
+}
+
+// Function to check if the order is already claimed and accept if not
+async function checkAndAcceptOrder(orderId) {
+    const { data: order, error } = await supabase
+        .from('orders')
+        .select('claimed')
+        .eq('id', orderId)
+        .single();
+
+    if (error) {
+        console.error('Error fetching order status:', error);
+        return;
+    }
+
+    // If the order is already claimed, show a quick message and return
+    if (order.claimed) {
+        showTemporaryMessage('Already claimed, please wait.');
+        return;
+    }
+
+    await acceptOrder(orderId);
+}
+
+// Function to show a temporary message
+function showTemporaryMessage(message) {
+    const messageElement = document.createElement('div');
+    messageElement.innerText = message;
+    messageElement.style.position = 'fixed';
+    messageElement.style.top = '20px';
+    messageElement.style.left = '50%';
+    messageElement.style.transform = 'translateX(-50%)';
+    messageElement.style.backgroundColor = '#ff0000';
+    messageElement.style.color = '#ffffff';
+    messageElement.style.padding = '10px';
+    messageElement.style.borderRadius = '5px';
+    messageElement.style.zIndex = '1000';
+    document.body.appendChild(messageElement);
+
+    setTimeout(() => {
+        document.body.removeChild(messageElement);
+    }, 3000); // Message disappears after 3 seconds
+}
+
+// Function to accept an order
+async function acceptOrder(id) {
+    if (currentOrderId) return;
+
+    const { data, error } = await supabase
+        .from('orders')
+        .update({ status: 'inprogress', claimed: true })
+        .match({ id });
+
+    if (error) {
+        console.error('Error updating order status:', error);
+        return;
+    }
+
+    localStorage.setItem('currentOrderId', id);
+    currentOrderId = id;
+
+    clearInterval(timers[id]); // Stop the timer
+    delete timers[id];
+
+    loadOrders();
+}
+
+// Function to complete an order
+async function completeOrder(id) {
+    const { data, error } = await supabase
+        .from('orders')
+        .delete()
+        .match({ id });
+
+    if (error) {
+        console.error('Error completing order:', error);
+        return;
+    }
+
+    localStorage.removeItem('currentOrderId');
+    currentOrderId = null;
+
+    document.getElementById('order-details').style.display = 'none';
+    loadOrders();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadOrders();
+});
+
+setInterval(loadOrders, 5000); // Refresh the orders list every 5 seconds
     </script>
 </body>
 </html>
