@@ -442,72 +442,77 @@ select:focus, input:focus {
         console.log(`Multiplied Order Count: ${waitTime}`);
     }, 5000); // 5000ms = 5 seconds
 
-    async function checkOrderStatus() {
-        const orders = JSON.parse(localStorage.getItem('orders')) || {};
-        for (const [orderId, { name, drink }] of Object.entries(orders)) {
-            const { data: order, error } = await supabase
-                .from('orders')
-                .select('*')
-                .eq('id', orderId)
-                .single();
+async function checkOrderStatus() {
+    const orders = JSON.parse(localStorage.getItem('orders')) || {};
+    for (const [orderId, { name, drink }] of Object.entries(orders)) {
+        const { data: order, error } = await supabase
+            .from('orders')
+            .select('*')
+            .eq('id', orderId)
+            .single();
 
-            if (error) {
-                if (error.code === 'PGRST116') {
-                    document.title = "(CLICK HERE) Order complete";
-                    if (!localStorage.getItem('completeNotify')) {
-                        localStorage.setItem('completeNotify', 'true');
-                        playSound(); // Play sound for completed
-                        document.getElementById('completed-drink').innerText = drink;
-                        document.getElementById('name2').innerText = name;
-                        showPopup('completed-popup');
-                        // Reset notification flags
-                        resetNotificationFlags();
-                        // Remove the completed order ID from localStorage
-                        delete orders[orderId];
-                        localStorage.setItem('orders', JSON.stringify(orders));
-                    }
-                } else {
-                    console.error(error);
-                }
-                continue;
+        if (error) {
+            console.error('Error fetching order status:', error);
+            continue;
+        }
+
+        // Check if the order status is 'completed'
+        if (order && order.status === 'completed') {
+            document.title = "(CLICK HERE) Order complete";
+            if (!localStorage.getItem('completeNotify')) {
+                localStorage.setItem('completeNotify', 'true');
+                playSound(); // Play sound for completed
+                document.getElementById('completed-drink').innerText = drink;
+                document.getElementById('name2').innerText = name;
+                showPopup('completed-popup');
+                // Reset notification flags
+                resetNotificationFlags();
+                // Remove the completed order ID from localStorage
+                delete orders[orderId];
+                localStorage.setItem('orders', JSON.stringify(orders));
             }
-            if (order) {
-                if (order.status === 'inprogress') {
-                    document.title = "(CLICK HERE) Order in progress";
-                    if (!localStorage.getItem('inprogressNotify')) {
-                        localStorage.setItem('inprogressNotify', 'true');
-                        playSound(); // Play sound for in progress
-                        document.getElementById('inprogress-drink').innerText = drink;
-                        showPopup('inprogress-popup');
-                    }
-                }
+        }
+
+        // Check if the order status is 'inprogress'
+        if (order && order.status === 'inprogress') {
+            document.title = "(CLICK HERE) Order in progress";
+            if (!localStorage.getItem('inprogressNotify')) {
+                localStorage.setItem('inprogressNotify', 'true');
+                playSound(); // Play sound for in progress
+                document.getElementById('inprogress-drink').innerText = drink;
+                showPopup('inprogress-popup');
             }
         }
     }
 
-    function removeOrderFromLocalStorage(orderId) {
-        let orderIds = JSON.parse(localStorage.getItem('orderIds')) || [];
-        orderIds = orderIds.filter(id => id !== orderId);
-        if (orderIds.length > 0) {
-            localStorage.setItem('orderIds', JSON.stringify(orderIds));
-        } else {
-            localStorage.removeItem('orderIds');
-        }
-    }
+    // Update orders in localStorage if any were removed
+    localStorage.setItem('orders', JSON.stringify(orders));
+}
 
-    function resetNotificationFlags() {
-        localStorage.removeItem('inprogressNotify');
-        localStorage.removeItem('completeNotify');
+function removeOrderFromLocalStorage(orderId) {
+    let orderIds = JSON.parse(localStorage.getItem('orderIds')) || [];
+    orderIds = orderIds.filter(id => id !== orderId);
+    if (orderIds.length > 0) {
+        localStorage.setItem('orderIds', JSON.stringify(orderIds));
+    } else {
+        localStorage.removeItem('orderIds');
     }
+}
 
-    function playSound() {
-        // Ensure the sound is played by a user interaction
-        sound.play().catch(error => {
-            console.error('Failed to play sound:', error);
-        });
-    }
+function resetNotificationFlags() {
+    localStorage.removeItem('inprogressNotify');
+    localStorage.removeItem('completeNotify');
+}
 
-    setInterval(checkOrderStatus, 5000); // Check every 5 seconds
+function playSound() {
+    // Ensure the sound is played by a user interaction
+    const sound = new Audio('path/to/sound/file.mp3'); // Add the correct path to your sound file
+    sound.play().catch(error => {
+        console.error('Failed to play sound:', error);
+    });
+}
+
+setInterval(checkOrderStatus, 5000); // Check every 5 seconds
 </script>
 </body>
 </html>
