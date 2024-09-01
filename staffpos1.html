@@ -156,7 +156,7 @@ async function loadOrders() {
         noOrdersMessage.style.display = 'none';
         orders.forEach((order, index) => {
             const li = document.createElement('li');
-            li.innerHTML = `Order ID: ${order.id} - Drink: ${order.drink} <span id="timer-${order.id}" class="timer"></span>`;
+            li.innerHTML = `Order ID: ${order.id} - Drink: ${order.drink} Name: ${order.name} <span id="timer-${order.id}" class="timer"></span>`;
             
             const acceptButton = document.createElement('button');
             acceptButton.innerText = 'Accept';
