@@ -100,6 +100,11 @@
         <h2>Order Details</h2>
         <div id="order-details-container"></div>
     </div>
+    <div id="completed-orders-log" style="margin-top: 30px;">
+    <h2>Completed Orders Log</h2>
+    <ul id="completed-orders-list" style="background-color: #e0ffe0; padding: 15px; border-radius: 8px; list-style: none;"></ul>
+</div>
+
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script>
@@ -328,6 +333,46 @@
         document.addEventListener('DOMContentLoaded', () => {
             loadOrders();
         });
+        // Function to log completed orders
+function logCompletedOrder(order) {
+    const completedOrdersList = document.getElementById('completed-orders-list');
+    const li = document.createElement('li');
+    li.style.padding = '10px';
+    li.style.borderBottom = '1px solid #ddd';
+    li.innerHTML = `<strong>Order ID:</strong> ${order.id} - <strong>Drink:</strong> ${order.drink} - <strong>Name:</strong> ${order.name}`;
+    completedOrdersList.appendChild(li);
+}
+
+// Modified completeOrder function to include logging
+async function completeOrder(id) {
+    const { data: order, error } = await supabase
+        .from('orders')
+        .update({ status: 'completed' })
+        .match({ id })
+        .select()
+        .single();  // Fetch the updated order details after completion
+
+    if (error) {
+        console.error('Error completing order:', error);
+        return;
+    }
+
+    acceptedOrders.delete(id);
+
+    // Remove order details from display
+    const orderInfoDiv = document.getElementById(`order-info-${id}`);
+    if (orderInfoDiv) orderInfoDiv.remove();
+
+    if (acceptedOrders.size === 0) {
+        document.getElementById('order-details').style.display = 'none';
+    }
+
+    // Log the completed order
+    logCompletedOrder(order);
+
+    loadOrders();
+}
+
 
         setInterval(loadOrders, 5000); // Refresh the orders list every 5 seconds
     </script>
