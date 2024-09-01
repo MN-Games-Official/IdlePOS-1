@@ -343,35 +343,34 @@ function logCompletedOrder(order) {
     completedOrdersList.appendChild(li);
 }
 
-// Modified completeOrder function to include logging
-async function completeOrder(id) {
-    const { data: order, error } = await supabase
+// Function to load and display all completed orders
+async function loadCompletedOrders() {
+    const { data: completedOrders, error } = await supabase
         .from('orders')
-        .update({ status: 'completed' })
-        .match({ id })
-        .select()
-        .single();  // Fetch the updated order details after completion
+        .select('*')
+        .eq('status', 'completed');
 
     if (error) {
-        console.error('Error completing order:', error);
+        console.error('Error loading completed orders:', error);
         return;
     }
 
-    acceptedOrders.delete(id);
+    const completedOrdersList = document.getElementById('completed-orders-list');
+    completedOrdersList.innerHTML = ''; // Clear the list before adding items
 
-    // Remove order details from display
-    const orderInfoDiv = document.getElementById(`order-info-${id}`);
-    if (orderInfoDiv) orderInfoDiv.remove();
-
-    if (acceptedOrders.size === 0) {
-        document.getElementById('order-details').style.display = 'none';
-    }
-
-    // Log the completed order
-    logCompletedOrder(order);
-
-    loadOrders();
+    completedOrders.forEach(order => {
+        const li = document.createElement('li');
+        li.style.padding = '10px';
+        li.style.borderBottom = '1px solid #ddd';
+        li.innerHTML = `<strong>Order ID:</strong> ${order.id} - <strong>Drink:</strong> ${order.drink} - <strong>Name:</strong> ${order.name}`;
+        completedOrdersList.appendChild(li);
+    });
 }
+
+// Load completed orders when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+    loadCompletedOrders();
+};
 
 
         setInterval(loadOrders, 5000); // Refresh the orders list every 5 seconds
