@@ -372,7 +372,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadCompletedOrders();
 });
 
-
+setInterval(loadCompletedOrders, 5000)
         setInterval(loadOrders, 5000); // Refresh the orders list every 5 seconds
     </script>
 </body>
